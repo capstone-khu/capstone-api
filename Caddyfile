@@ -4,7 +4,4 @@
 
 api-capstone.kro.kr {
     reverse_proxy api:8000
-    tls {
-        issuer zerossl
-    }
 }
