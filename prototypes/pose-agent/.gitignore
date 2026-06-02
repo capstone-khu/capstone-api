@@ -1,0 +1,9 @@
+# 가상환경과 캐시 파일, 환경 변수 파일 무시
+venv/
+__pycache__/
+*.pyc
+.env
+/data/raw/*
+train_tcn.py
+tcn_model.py
+pose_output.json

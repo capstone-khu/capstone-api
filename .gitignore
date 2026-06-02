@@ -1,0 +1,30 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Tooling caches
+.ruff_cache/
+.pytest_cache/
+
+# Virtual environments
+.venv
+
+# Environment variables 
+.env
+
+# IDE
+.idea/
+.vscode/
+
+# Claude Code
+CLAUDE.md
+
+# deploy
+docs/deploy/DEPLOY.md
+
+# design
+docs/design/DESIGN.md

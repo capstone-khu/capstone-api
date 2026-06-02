@@ -1,0 +1,28 @@
+[project]
+name = "capstone-api"
+version = "0.1.0"
+description = "음정/박자/자세 멀티 에이전트 연주 분석 API"
+requires-python = ">=3.12"
+dependencies = [
+    "aiomysql>=0.3.2",
+    "alembic>=1.18.4",
+    "cryptography>=48.0.0",
+    "fastapi[standard]>=0.136.3",
+    "pydantic-settings>=2.14.1",
+    "sqlalchemy[asyncio]>=2.0",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.15",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Path"]
