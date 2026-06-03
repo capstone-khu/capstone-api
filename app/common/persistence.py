@@ -32,6 +32,7 @@ engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.DEBUG,
     pool_pre_ping=True,
+    connect_args={"init_command": "SET time_zone = '+09:00'"},
 )
 
 AsyncSessionLocal = async_sessionmaker(

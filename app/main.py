@@ -5,6 +5,7 @@ from app.common import health
 from app.common.config import settings
 from app.common.exception.handlers import add_exception_handlers
 from app.domain.auth import router as auth_router
+from app.domain.user import router as user_router
 
 DESCRIPTION = """\
 캡스톤 백엔드 API.
@@ -43,3 +44,4 @@ add_exception_handlers(app)
 
 app.include_router(health.router)
 app.include_router(auth_router.router)
+app.include_router(user_router.router)
