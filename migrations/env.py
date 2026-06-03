@@ -71,6 +71,7 @@ async def run_async_migrations() -> None:
         configuration,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        connect_args={"init_command": "SET time_zone = '+09:00'"},
     )
 
     async with connectable.connect() as connection:
