@@ -9,6 +9,9 @@ class ErrorCode(Enum):
     RESOURCE_NOT_FOUND = (404, "COM_404_001", "존재하지 않는 리소스입니다.")
     INTERNAL_SERVER_ERROR = (500, "COM_500_001", "서버 내부 오류가 발생했습니다.")
 
+    # ===== AUTH =====
+    LOGIN_FAILED = (401, "AUT_401_001", "이름 또는 비밀번호가 올바르지 않습니다.")
+
     def __init__(self, status: int, code: str, message: str) -> None:
         self.status = status
         self.code = code
