@@ -27,6 +27,7 @@
 | SES_404_001 | 404 | 존재하지 않는 세션입니다. |
 | SES_409_001 | 409 | 이미 종료된 세션입니다. |
 | REC_404_001 | 404 | 존재하지 않는 녹음입니다. |
+| DUE_403_001 | 403 | 본인의 협주 영상이 아닙니다. |
 | DUE_404_001 | 404 | 존재하지 않는 협주 영상입니다. |
 
 ---
@@ -276,7 +277,7 @@
 ## 2.2 연주 이력 조회
 
 **1. API 설명**
-내 연주 이력을 페이지 단위(기본 3개)로 조회한다. 각 항목은 영역별 **문제 개수**(`state != GOOD`) 통계와 **집중 반복 필요 마디**(`focus_measures`)를 포함하며, 협주 기록은 합성 영상 ID를 함께 반환한다. (`feedback_events` 엔 GOOD도 저장되지만 stats는 문제만 센다 — DESIGN #25) `focus_measures` 가 비어있지 않으면 그 세션에 "집중 반복 레슨" 버튼을 노출하고, 각 마디 데이터는 §4.6 마디 상세 조회를 재사용한다(DESIGN #28).
+내 연주 이력을 페이지 단위(기본 3개)로 조회한다. 각 항목은 영역별 **문제 개수**(`state != GOOD`) 통계와 **집중 반복 필요 마디**(`focus_measures`)를 포함하며, 협주 기록은 합성 영상 ID를 함께 반환한다. (`feedback_events` 엔 GOOD도 저장되지만 stats는 문제만 센다 — DESIGN #25) `focus_measures` 가 비어있지 않으면 그 세션에 "집중 반복 레슨" 버튼을 노출하고, 각 마디 데이터는 §4.6 마디 상세 조회를 재사용한다(DESIGN #28). 목록은 `played_at` 내림차순(최신순)으로 정렬한다.
 
 **2. Endpoint + Method**
 `GET /me/history`
@@ -313,8 +314,8 @@
 | items[].played_at | string(datetime) | Y | 연주 시각 | "2026-06-02T09:30:00+09:00" |
 | items[].mode | string | Y | 모드(solo/duet) | "duet" |
 | items[].stats.pitch | number | Y | 음정 문제 개수(GOOD 제외) | 3 |
-| items[].stats.rhythm | number | Y | 박자 피드백 개수 | 1 |
-| items[].stats.posture | number | Y | 자세 피드백 개수 | 2 |
+| items[].stats.rhythm | number | Y | 박자 문제 개수(GOOD 제외) | 1 |
+| items[].stats.posture | number | Y | 자세 문제 개수(GOOD 제외) | 2 |
 | items[].focus_measures | array | Y | 집중 반복 필요 마디(세 영역 모두 `state != GOOD`인 마디). 없으면 `[]` | [5, 7] |
 | items[].duet_composite_id | number | N | 협주 합성 영상 ID(협주 기록만) | 5 |
 
@@ -361,87 +362,10 @@
 
 ---
 
-## 2.3 협주 영상 목록 조회
+## 2.3 협주 합성 영상 단건 조회
 
 **1. API 설명**
-내가 참여한 협주의 좌우 분할 합성 영상 목록을 조회한다.
-
-**2. Endpoint + Method**
-`GET /me/duet-videos`
-
-**3. Path Parameter**
-(없음)
-
-**4. Query Parameter**
-(없음)
-
-**5. Request Header**
-| Name | Type | Required | Description | Example |
-|---|---|---|---|---|
-| Authorization | string | Y | Bearer 액세스 토큰 | Bearer eyJhbGciOi... |
-
-**6. Request Body**
-(없음)
-
-**7. Request Example (JSON)**
-(없음)
-
-**8. Response Body**
-| Name | Type | Required | Description | Example |
-|---|---|---|---|---|
-| videos | array | Y | 협주 영상 목록 | [] |
-| videos[].duet_composite_id | number | Y | 합성 영상 ID | 5 |
-| videos[].song_title | string | Y | 곡명 | "반짝 반짝 작은별" |
-| videos[].partner_name | string | Y | 협주 상대 이름 | "이준호" |
-| videos[].composite_video_url | string | N | 합성 영상 URL(ready 시) | "/media/duet/5.mp4" |
-| videos[].status | string | Y | 합성 상태(pending/processing/ready/failed) | "ready" |
-| videos[].created_at | string(datetime) | Y | 생성 시각 | "2026-06-02T09:35:00+09:00" |
-
-**9. Success Response Example (2xx)**
-`200 OK`
-```json
-{
-  "success": true,
-  "status": 200,
-  "message": "요청에 성공했습니다.",
-  "data": {
-    "videos": [
-      { "duet_composite_id": 5, "song_title": "반짝 반짝 작은별", "partner_name": "이준호",
-        "composite_video_url": "/media/duet/5.mp4", "status": "ready",
-        "created_at": "2026-06-02T09:35:00+09:00" }
-    ]
-  }
-}
-```
-
-**10. Error Response Example (4xx, 5xx)**
-`401 Unauthorized`
-```json
-{
-  "success": false,
-  "status": 401,
-  "message": "인증이 필요합니다.",
-  "code": "COM_401_001",
-  "meta": { "path": "/me/duet-videos", "timestamp": 1733132400000 }
-}
-```
-`500 Internal Server Error`
-```json
-{
-  "success": false,
-  "status": 500,
-  "message": "서버 내부 오류가 발생했습니다.",
-  "code": "COM_500_001",
-  "meta": { "path": "/me/duet-videos", "timestamp": 1733132400000 }
-}
-```
-
----
-
-## 2.4 협주 합성 영상 단건 조회
-
-**1. API 설명**
-협주 합성 영상 1건의 상태를 조회한다. `POST /sessions/{id}/complete` 가 돌려준 `duet_composite_id` 로 합성 잡 진행 상태(`processing → ready/failed`)를 폴링하는 용도다. (합성 잡 = DESIGN #38 `BackgroundTasks`+ffmpeg)
+협주 합성 영상 1건의 상태를 조회한다. `POST /sessions/{id}/complete` 가 돌려준 `duet_composite_id` 로 합성 잡 진행 상태(`pending → processing → ready/failed`)를 폴링하는 용도다. (합성 잡 = DESIGN #38 `BackgroundTasks`+ffmpeg)
 
 **2. Endpoint + Method**
 `GET /duet-videos/{duet_composite_id}`
@@ -497,6 +421,16 @@
   "status": 401,
   "message": "인증이 필요합니다.",
   "code": "COM_401_001",
+  "meta": { "path": "/duet-videos/5", "timestamp": 1733132400000 }
+}
+```
+`403 Forbidden`
+```json
+{
+  "success": false,
+  "status": 403,
+  "message": "본인의 협주 영상이 아닙니다.",
+  "code": "DUE_403_001",
   "meta": { "path": "/duet-videos/5", "timestamp": 1733132400000 }
 }
 ```
