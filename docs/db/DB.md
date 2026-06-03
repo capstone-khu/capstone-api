@@ -115,7 +115,7 @@
 ## 4. sessions
 
 **1. 테이블 설명**
-연주 세션(혼자/협주). 집중 반복 레슨은 별도 세션 없이 `measure_progress` 로 처리하므로 모드에 포함하지 않는다.
+연주 세션(혼자/협주). 집중 반복 레슨은 별도 세션 없이 `feedback_events` 에서 세션별 문제 마디(세 영역 모두 `state != GOOD`)를 도출해 처리하므로 모드에 포함하지 않는다.
 
 **2. 테이블 이름**
 `sessions`
@@ -306,52 +306,10 @@
 
 ---
 
-## 9. measure_progress (L3)
+## 9. feedback_events (L4)
 
 **1. 테이블 설명**
-마디 단위 누적 상태(세션 간 지속). 폴백 누적·집중 반복 레슨 추천/완료를 관리한다. 집중 레슨은 이 테이블로만 처리하며 별도 세션을 만들지 않는다. 약점 마디가 여러 개면 행이 여러 개다. `focus_completed=true` 처리 시 `fallback_count=0`·`focus_recommended=false` 로 리셋한다(이후 다시 ≥3 누적 시 재추천).
-
-**2. 테이블 이름**
-`measure_progress`
-
-**3. 컬럼 명세**
-| Key | Name | Type | Constraint(nullable) | Description | Example |
-|---|---|---|---|---|---|
-| PK | id | BIGINT | NOT NULL, AUTO_INCREMENT | 행 ID | 700 |
-| FK | user_id | BIGINT | NOT NULL | 사용자(users.id) | 1 |
-| FK | song_id | BIGINT | NOT NULL | 곡(songs.id) | 1 |
-| - | measure_index | INT | NOT NULL | 마디 번호 | 1 |
-| - | fallback_count | INT | NOT NULL, DEFAULT 0 | 누적 폴백 횟수 | 3 |
-| - | focus_recommended | BOOLEAN | NOT NULL, DEFAULT false | 집중 레슨 추천 여부(≥3) | true |
-| - | focus_completed | BOOLEAN | NOT NULL, DEFAULT false | 집중 레슨 완료 여부 | false |
-| - | focus_attempts | INT | NOT NULL, DEFAULT 0 | 집중 레슨 완료 횟수 | 0 |
-| - | created_at | DATETIME | NOT NULL | 생성 시각 | "2026-06-01 10:00:00" |
-| - | updated_at | DATETIME | NOT NULL | 수정 시각 | "2026-06-02 09:33:00" |
-
-> UNIQUE(user_id, song_id, measure_index)
-
-**4. Example Row**
-```json
-{
-  "id": 700,
-  "user_id": 1,
-  "song_id": 1,
-  "measure_index": 1,
-  "fallback_count": 3,
-  "focus_recommended": true,
-  "focus_completed": false,
-  "focus_attempts": 0,
-  "created_at": "2026-06-01 10:00:00",
-  "updated_at": "2026-06-02 09:33:00"
-}
-```
-
----
-
-## 10. feedback_events (L4)
-
-**1. 테이블 설명**
-마디별 에이전트 출력 기록(append-only). **(measure_index, domain)당 최대 1행**(마디당 보통 3행). **마디마다 모든 도메인 출력을 기록**한다(GOOD/POSITIVE 포함) — 종합 피드백이 잘한 곳까지 봐야 하기 때문. 결과 마킹·이력 stats는 `state != 'GOOD'` 로 걸러 **문제만** 센다(저장은 전부, 표시는 문제 위주). 위임은 새 행을 만들지 않고 위임자 행의 `delegated_to` 로만 표시한다(WS `delegated_from` 은 역산). 결과·AI분석·이력 통계의 단일 소스다. 추가만 하고 수정하지 않으므로 `updated_at` 이 없다.
+마디별 에이전트 출력 기록(append-only). **(measure_index, domain)당 최대 1행**(마디당 보통 3행). **마디마다 모든 도메인 출력을 기록**한다(GOOD/POSITIVE 포함) — 종합 피드백이 잘한 곳까지 봐야 하기 때문. 결과 마킹·이력 stats는 `state != 'GOOD'` 로 걸러 **문제만** 센다(저장은 전부, 표시는 문제 위주). 위임(`-00`)은 새 행을 만들지 않고 막힌 도메인 자신의 행에 원인 분석 결과를 담는다 — `cause_domain`(지목된 원인 영역) + `feedback`(원인 설명) + `meta.cause_source`(`llm`/`heuristic`). 세션별 집중 반복 레슨 마디는 별도 테이블 없이 이 표에서 (measure_index 별) **세 도메인이 모두 `state != 'GOOD'`** 인 마디를 조회해 도출한다. 결과·AI분석·이력 통계의 단일 소스다. 추가만 하고 수정하지 않으므로 `updated_at` 이 없다.
 
 **2. 테이블 이름**
 `feedback_events`
@@ -369,9 +327,9 @@
 | - | feedback | TEXT | NOT NULL | 피드백 문구 | "음정을 내리세요" |
 | - | reward | FLOAT | NULL | 직전 마디 대비 보상(첫 마디 null) | 1.0 |
 | - | q | FLOAT | NOT NULL | 갱신 후 Q값 | 0.7 |
-| - | delegated_to | VARCHAR(10) | NULL | 라우팅 대상 도메인 | "posture" |
-| - | is_fallback | BOOLEAN | NOT NULL, DEFAULT false | 폴백 메시지 여부 | false |
-| - | meta | JSON | NULL | 도메인 고유 정보 | {} |
+| - | cause_domain | VARCHAR(10) | NULL | 위임(`-00`) 시 지목된 원인 도메인 | "rhythm" |
+| - | is_fallback | BOOLEAN | NOT NULL, DEFAULT false | 원인이 룰베이스 휴리스틱(동료 전원 GOOD)인지 여부. LLM 분석이면 false | false |
+| - | meta | JSON | NULL | 도메인 고유 정보(pitch=avg_cents·state, rhythm=drift_label·score, posture=feature·risk_percent). 위임 행은 `cause_source` 포함 | {} |
 | - | created_at | DATETIME | NOT NULL | 생성 시각 | "2026-06-02 09:31:00" |
 
 > INDEX(session_id, measure_index)
@@ -389,9 +347,9 @@
   "feedback": "음정을 내리세요",
   "reward": 1.0,
   "q": 0.7,
-  "delegated_to": null,
+  "cause_domain": null,
   "is_fallback": false,
-  "meta": {},
+  "meta": { "avg_cents": 112.0 },
   "created_at": "2026-06-02 09:31:00"
 }
 ```
