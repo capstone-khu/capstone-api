@@ -6,6 +6,12 @@ from app.common.response import ApiResponse, ErrorMeta
 _META_EXAMPLE = ErrorMeta(path="/api/example", timestamp=1733000000000)
 
 
+def success_response(
+    status_code: int, example: dict[str, Any]
+) -> dict[int | str, dict[str, Any]]:
+    return {status_code: {"content": {"application/json": {"example": example}}}}
+
+
 def error_responses(*error_codes: ErrorCode) -> dict[int | str, dict[str, Any]]:
     grouped: dict[int, list[ErrorCode]] = {}
     for error_code in error_codes:
