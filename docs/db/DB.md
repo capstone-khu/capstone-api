@@ -169,7 +169,6 @@
 | FK | song_id | BIGINT | NOT NULL | 곡 ID(songs.id) | 1 |
 | - | audio_url | VARCHAR(500) | NOT NULL | 오디오 파일 경로(업로드 원본 포맷 그대로, `/media/` 상대) | "/media/recordings/21.webm" |
 | - | video_url | VARCHAR(500) | NOT NULL | 영상 파일 경로(업로드 원본 포맷 그대로, `/media/` 상대) | "/media/recordings/21.webm" |
-| - | duration | INT | NOT NULL | 길이(초) | 180 |
 | - | available_for_duet | BOOLEAN | NOT NULL, DEFAULT true | 협주 상대 노출 여부 | true |
 | - | created_at | DATETIME | NOT NULL | 생성 시각 | "2026-06-02 09:33:00" |
 | - | updated_at | DATETIME | NOT NULL | 수정 시각 | "2026-06-02 09:33:00" |
@@ -183,7 +182,6 @@
   "song_id": 1,
   "audio_url": "/media/recordings/21.webm",
   "video_url": "/media/recordings/21.webm",
-  "duration": 180,
   "available_for_duet": true,
   "created_at": "2026-06-02 09:33:00",
   "updated_at": "2026-06-02 09:33:00"
@@ -246,7 +244,6 @@
 | - | headline | VARCHAR(255) | NOT NULL | 한 줄 헤드라인 | "이번엔 음정이 제일 아쉬웠어요" |
 | - | coach_comment | TEXT | NOT NULL | 코치 코멘트(디브리핑) | "음정이 자주 흔들렸어요..." |
 | - | domains | JSON | NOT NULL | 영역별 {level,diagnosis,practice} | {"pitch":{"level":"weak","diagnosis":"...","practice":"..."}} |
-| - | generated_at | DATETIME | NOT NULL | 생성 시각 | "2026-06-02 09:34:00" |
 | - | created_at | DATETIME | NOT NULL | 생성 시각 | "2026-06-02 09:34:00" |
 | - | updated_at | DATETIME | NOT NULL | 수정 시각 | "2026-06-02 09:34:00" |
 
@@ -258,7 +255,6 @@
   "headline": "이번엔 음정이 제일 아쉬웠어요",
   "coach_comment": "음정이 자주 흔들렸고 자세가 무너질 때 같이 흔들렸어요.",
   "domains": { "pitch": { "level": "weak", "diagnosis": "높은 음에서 음정이 올라갔어요", "practice": "스케일을 천천히 반복" }, "rhythm": { "level": "ok", "diagnosis": "일부 구간 늦음", "practice": "메트로놈 연습" }, "posture": { "level": "good", "diagnosis": "안정적" } },
-  "generated_at": "2026-06-02 09:34:00",
   "created_at": "2026-06-02 09:34:00",
   "updated_at": "2026-06-02 09:34:00"
 }
@@ -309,7 +305,7 @@
 ## 9. feedback_events (L4)
 
 **1. 테이블 설명**
-마디별 에이전트 출력 기록(append-only). **(measure_index, domain)당 최대 1행**(마디당 보통 3행). **마디마다 모든 도메인 출력을 기록**한다(GOOD/POSITIVE 포함) — 종합 피드백이 잘한 곳까지 봐야 하기 때문. 결과 마킹·이력 stats는 `state != 'GOOD'` 로 걸러 **문제만** 센다(저장은 전부, 표시는 문제 위주). 위임(`-00`)은 새 행을 만들지 않고 막힌 도메인 자신의 행에 원인 분석 결과를 담는다 — `cause_domain`(지목된 원인 영역) + `feedback`(원인 설명) + `meta.cause_source`(`llm`/`heuristic`). 세션별 집중 반복 레슨 마디는 별도 테이블 없이 이 표에서 (measure_index 별) **세 도메인이 모두 `state != 'GOOD'`** 인 마디를 조회해 도출한다. 결과·AI분석·이력 통계의 단일 소스다. 추가만 하고 수정하지 않으므로 `updated_at` 이 없다.
+마디별 에이전트 출력 기록(append-only). **(measure_index, domain)당 최대 1행**(마디당 보통 3행). **마디마다 모든 도메인 출력을 기록**한다(GOOD/POSITIVE 포함) — 종합 피드백이 잘한 곳까지 봐야 하기 때문. 결과 마킹·이력 stats는 `state != 'GOOD'` 로 걸러 **문제만** 센다(저장은 전부, 표시는 문제 위주). 위임(`-00`)은 새 행을 만들지 않고 막힌 도메인 자신의 행에 원인 분석 결과를 담는다 — `cause_domain`(지목된 원인 영역) + `feedback`(원인 설명) + `cause_source`(`llm`/`heuristic`). 세션별 집중 반복 레슨 마디는 별도 테이블 없이 이 표에서 (measure_index 별) **세 도메인이 모두 `state != 'GOOD'`** 인 마디를 조회해 도출한다. 결과·AI분석·이력 통계의 단일 소스다. 추가만 하고 수정하지 않으므로 `updated_at` 이 없다.
 
 **2. 테이블 이름**
 `feedback_events`
@@ -327,9 +323,9 @@
 | - | feedback | TEXT | NOT NULL | 피드백 문구 | "음정을 내리세요" |
 | - | reward | FLOAT | NULL | 직전 마디 대비 보상(첫 마디 null) | 1.0 |
 | - | q | FLOAT | NOT NULL | 갱신 후 Q값 | 0.7 |
-| - | cause_domain | VARCHAR(10) | NULL | 위임(`-00`) 시 지목된 원인 도메인 | "rhythm" |
-| - | is_fallback | BOOLEAN | NOT NULL, DEFAULT false | 원인이 룰베이스 휴리스틱(동료 전원 GOOD)인지 여부. LLM 분석이면 false | false |
-| - | meta | JSON | NULL | 도메인 고유 정보(pitch=avg_cents·state, rhythm=drift_label·score, posture=feature·risk_percent). 위임 행은 `cause_source` 포함 | {} |
+| - | cause_domain | VARCHAR(10) | NULL | 위임(`-00`) 시 지목된 원인 도메인(위임 아니면 NULL) | "rhythm" |
+| - | cause_source | ENUM('llm','heuristic') | NULL | 위임(`-00`) 원인 산출 출처(위임 아니면 NULL) | "llm" |
+| - | meta | JSON | NULL | 도메인 고유 정보(pitch=avg_cents·state, rhythm=drift_label·score, posture=feature·risk_percent) | {} |
 | - | created_at | DATETIME | NOT NULL | 생성 시각 | "2026-06-02 09:31:00" |
 
 > INDEX(session_id, measure_index)
@@ -348,7 +344,7 @@
   "reward": 1.0,
   "q": 0.7,
   "cause_domain": null,
-  "is_fallback": false,
+  "cause_source": null,
   "meta": { "avg_cents": 112.0 },
   "created_at": "2026-06-02 09:31:00"
 }
