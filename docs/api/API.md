@@ -23,6 +23,7 @@
 | COM_500_001 | 500 | 서버 내부 오류가 발생했습니다. |
 | AUT_401_001 | 401 | 이름 또는 비밀번호가 올바르지 않습니다. |
 | SON_404_001 | 404 | 존재하지 않는 곡입니다. |
+| SES_400_001 | 400 | 협주 상대 녹음이 올바르지 않습니다. |
 | SES_403_001 | 403 | 본인의 세션이 아닙니다. |
 | SES_404_001 | 404 | 존재하지 않는 세션입니다. |
 | SES_409_001 | 409 | 이미 종료된 세션입니다. |
@@ -715,7 +716,7 @@
 ## 4.1 세션 생성
 
 **1. API 설명**
-연주 세션을 생성한다. `mode` 가 `duet` 이면 `partner_recording_id` 가 필요하다.
+연주 세션을 생성한다. `mode` 가 `duet` 이면 `partner_recording_id` 가 필요하다. 협주 녹음은 **존재**해야 하고(없으면 404 `REC_404_001`), **요청 곡(`song_id`)의 녹음**이며 **요청자 본인의 녹음이 아니어야** 한다(어긋나면 400 `SES_400_001`).
 
 **2. Endpoint + Method**
 `POST /sessions`
@@ -772,6 +773,15 @@
   "meta": { "path": "/sessions", "timestamp": 1733132400000 }
 }
 ```
+```json
+{
+  "success": false,
+  "status": 400,
+  "message": "협주 상대 녹음이 올바르지 않습니다.",
+  "code": "SES_400_001",
+  "meta": { "path": "/sessions", "timestamp": 1733132400000 }
+}
+```
 `401 Unauthorized`
 ```json
 {
@@ -783,6 +793,15 @@
 }
 ```
 `404 Not Found`
+```json
+{
+  "success": false,
+  "status": 404,
+  "message": "존재하지 않는 곡입니다.",
+  "code": "SON_404_001",
+  "meta": { "path": "/sessions", "timestamp": 1733132400000 }
+}
+```
 ```json
 {
   "success": false,
@@ -1031,6 +1050,16 @@ Content-Type: video/webm
   "meta": { "path": "/sessions/12/complete", "timestamp": 1733132400000 }
 }
 ```
+`404 Not Found`
+```json
+{
+  "success": false,
+  "status": 404,
+  "message": "존재하지 않는 세션입니다.",
+  "code": "SES_404_001",
+  "meta": { "path": "/sessions/999/complete", "timestamp": 1733132400000 }
+}
+```
 `409 Conflict`
 ```json
 {
@@ -1101,6 +1130,16 @@ Content-Type: video/webm
   "meta": { "path": "/sessions/12/abort", "timestamp": 1733132400000 }
 }
 ```
+`403 Forbidden`
+```json
+{
+  "success": false,
+  "status": 403,
+  "message": "본인의 세션이 아닙니다.",
+  "code": "SES_403_001",
+  "meta": { "path": "/sessions/12/abort", "timestamp": 1733132400000 }
+}
+```
 `404 Not Found`
 ```json
 {
@@ -1109,6 +1148,16 @@ Content-Type: video/webm
   "message": "존재하지 않는 세션입니다.",
   "code": "SES_404_001",
   "meta": { "path": "/sessions/999/abort", "timestamp": 1733132400000 }
+}
+```
+`409 Conflict`
+```json
+{
+  "success": false,
+  "status": 409,
+  "message": "이미 종료된 세션입니다.",
+  "code": "SES_409_001",
+  "meta": { "path": "/sessions/12/abort", "timestamp": 1733132400000 }
 }
 ```
 `500 Internal Server Error`
@@ -1156,13 +1205,20 @@ Content-Type: video/webm
 |---|---|---|---|---|
 | session_id | number | Y | 세션 ID | 12 |
 | song_id | number | Y | 곡 ID | 1 |
+| song_title | string | Y | 곡명(헤더 표시용) | "반짝 반짝 작은별" |
+| played_at | string(datetime) | Y | 연주 시각(헤더 표시용) | "2026-06-02T09:30:00+09:00" |
 | mode | string | Y | 모드 | "duet" |
+| partner_name | string | N | 협주 상대 이름(duet만) | "이준호" |
 | measures | array | Y | 마디별 마킹 | [] |
 | measures[].measure_index | number | Y | 마디 번호 | 1 |
 | measures[].current | array | Y | 이번 세션 마킹(채움) | [] |
 | measures[].current[].domain | string | Y | 영역 | "pitch" |
+| measures[].current[].action_id | string | Y | 액션 ID(`-00`=위임 원인 → 무지개, `-02+`=교정) | "PT-03" |
 | measures[].current[].feedback | string | Y | 피드백(도메인당 1개) | "음정을 내리세요" |
 | measures[].previous | array | Y | 직전 세션 마킹(외곽선) | [] |
+| measures[].previous[].domain | string | Y | 영역 | "rhythm" |
+| measures[].previous[].action_id | string | Y | 액션 ID | "RH-03" |
+| measures[].previous[].feedback | string | Y | 피드백(도메인당 1개) | "박자보다 늦게 연주하고 있습니다" |
 
 **9. Success Response Example (2xx)**
 `200 OK`
@@ -1172,11 +1228,11 @@ Content-Type: video/webm
   "status": 200,
   "message": "요청에 성공했습니다.",
   "data": {
-    "session_id": 12, "song_id": 1, "mode": "duet",
+    "session_id": 12, "song_id": 1, "song_title": "반짝 반짝 작은별", "played_at": "2026-06-02T09:30:00+09:00", "mode": "duet", "partner_name": "이준호",
     "measures": [
       { "measure_index": 1,
-        "current": [ { "domain": "pitch", "feedback": "음정을 내리세요" } ],
-        "previous": [ { "domain": "rhythm", "feedback": "박자보다 늦게 연주하고 있습니다" } ] }
+        "current": [ { "domain": "pitch", "action_id": "PT-03", "feedback": "음정을 내리세요" } ],
+        "previous": [ { "domain": "rhythm", "action_id": "RH-03", "feedback": "박자보다 늦게 연주하고 있습니다" } ] }
     ]
   }
 }
@@ -1190,6 +1246,16 @@ Content-Type: video/webm
   "status": 401,
   "message": "인증이 필요합니다.",
   "code": "COM_401_001",
+  "meta": { "path": "/sessions/12/result", "timestamp": 1733132400000 }
+}
+```
+`403 Forbidden`
+```json
+{
+  "success": false,
+  "status": 403,
+  "message": "본인의 세션이 아닙니다.",
+  "code": "SES_403_001",
   "meta": { "path": "/sessions/12/result", "timestamp": 1733132400000 }
 }
 ```
@@ -1248,11 +1314,19 @@ Content-Type: video/webm
 | Name | Type | Required | Description | Example |
 |---|---|---|---|---|
 | measure_index | number | Y | 마디 번호 | 1 |
-| notes | array | Y | 음표 배열 | [] |
+| notes | array | Y | 음표 배열(필드는 §3.2 악보 조회와 동일) | [] |
+| notes[].pitch | string | Y | 음높이 | "C4" |
+| notes[].duration | string | Y | 음길이 | "quarter" |
+| notes[].position | number | Y | 마디 내 박 위치 | 0 |
+| notes[].lyric | string | N | 가사 음절 | "반" |
 | current_markings | array | Y | 이번 세션 마킹 | [] |
 | current_markings[].domain | string | Y | 영역 | "pitch" |
+| current_markings[].action_id | string | Y | 액션 ID(`-00`=위임 원인 → 무지개, `-02+`=교정) | "PT-03" |
 | current_markings[].feedback | string | Y | 피드백(도메인당 1개) | "음정을 내리세요" |
 | previous_markings | array | Y | 이전 세션 마킹(참고) | [] |
+| previous_markings[].domain | string | Y | 영역 | "rhythm" |
+| previous_markings[].action_id | string | Y | 액션 ID | "RH-03" |
+| previous_markings[].feedback | string | Y | 피드백(도메인당 1개) | "박자보다 늦게 연주하고 있습니다" |
 
 **9. Success Response Example (2xx)**
 `200 OK`
@@ -1264,7 +1338,7 @@ Content-Type: video/webm
   "data": {
     "measure_index": 1,
     "notes": [ { "pitch": "C4", "duration": "quarter", "position": 0, "lyric": "반" } ],
-    "current_markings": [ { "domain": "pitch", "feedback": "음정을 내리세요" } ],
+    "current_markings": [ { "domain": "pitch", "action_id": "PT-03", "feedback": "음정을 내리세요" } ],
     "previous_markings": []
   }
 }
@@ -1278,6 +1352,16 @@ Content-Type: video/webm
   "status": 401,
   "message": "인증이 필요합니다.",
   "code": "COM_401_001",
+  "meta": { "path": "/sessions/12/measures/1", "timestamp": 1733132400000 }
+}
+```
+`403 Forbidden`
+```json
+{
+  "success": false,
+  "status": 403,
+  "message": "본인의 세션이 아닙니다.",
+  "code": "SES_403_001",
   "meta": { "path": "/sessions/12/measures/1", "timestamp": 1733132400000 }
 }
 ```
@@ -1307,7 +1391,7 @@ Content-Type: video/webm
 ## 4.7 AI 상세 분석 조회
 
 **1. API 설명**
-세션의 AI 상세 분석(디브리핑 + 영역별 수준·진단·연습)을 조회한다. 없으면 첫 호출에서 `/coach` LLM(OpenAI)으로 **동기 생성**(수 초 블로킹)한 뒤 캐시하며, 이후 같은 세션은 저장본을 반환한다. (백그라운드 잡 아님 — DESIGN #31)
+세션의 AI 상세 분석(디브리핑 + 영역별 수준·진단·연습)을 조회한다. 없으면 첫 호출에서 `/coach` LLM(OpenAI)으로 **동기 생성**(수 초 블로킹)한 뒤 캐시하며, 이후 같은 세션은 저장본을 반환한다. (백그라운드 잡 아님 — DESIGN #31) 세 영역이 모두 무너진 마디(`focus_measures`)도 함께 반환해 '집중 반복 레슨' 진입에 쓴다(`feedback_events` 에서 도출, 캐시 대상 아님 — DESIGN #28).
 
 **2. Endpoint + Method**
 `GET /sessions/{session_id}/analysis`
@@ -1342,6 +1426,7 @@ Content-Type: video/webm
 | domains.pitch.practice | string | N | 음정 연습 처방(good이면 없음) | "스케일을 천천히..." |
 | domains.rhythm | object | Y | 박자 분석(동일 구조) | {} |
 | domains.posture | object | Y | 자세 분석(동일 구조) | {} |
+| focus_measures | array | Y | 세 영역 모두 `state != GOOD`인 마디(집중 반복 레슨용). 없으면 `[]` | [5, 7] |
 
 **9. Success Response Example (2xx)**
 `200 OK`
@@ -1358,7 +1443,8 @@ Content-Type: video/webm
       "pitch": { "level": "weak", "diagnosis": "높은 음에서 음정이 올라갔어요", "practice": "스케일을 천천히 반복해보세요" },
       "rhythm": { "level": "ok", "diagnosis": "일부 구간에서 살짝 늦었어요", "practice": "메트로놈에 맞춰 연습해보세요" },
       "posture": { "level": "good", "diagnosis": "자세는 안정적이었어요" }
-    }
+    },
+    "focus_measures": [5, 7]
   }
 }
 ```
@@ -1371,6 +1457,16 @@ Content-Type: video/webm
   "status": 401,
   "message": "인증이 필요합니다.",
   "code": "COM_401_001",
+  "meta": { "path": "/sessions/12/analysis", "timestamp": 1733132400000 }
+}
+```
+`403 Forbidden`
+```json
+{
+  "success": false,
+  "status": 403,
+  "message": "본인의 세션이 아닙니다.",
+  "code": "SES_403_001",
   "meta": { "path": "/sessions/12/analysis", "timestamp": 1733132400000 }
 }
 ```
