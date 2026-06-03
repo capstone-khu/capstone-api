@@ -27,7 +27,6 @@
 | SES_404_001 | 404 | 존재하지 않는 세션입니다. |
 | SES_409_001 | 409 | 이미 종료된 세션입니다. |
 | REC_404_001 | 404 | 존재하지 않는 녹음입니다. |
-| PRG_404_001 | 404 | 추천된 집중 레슨이 아닙니다. |
 | DUE_404_001 | 404 | 존재하지 않는 협주 영상입니다. |
 
 ---
@@ -335,7 +334,7 @@
 ## 2.2 연주 이력 조회
 
 **1. API 설명**
-내 연주 이력을 페이지 단위(기본 3개)로 조회한다. 각 항목은 영역별 **문제 개수**(`state != GOOD`) 통계를 포함하며, 협주 기록은 합성 영상 ID를 함께 반환한다. (`feedback_events` 엔 GOOD도 저장되지만 stats는 문제만 센다 — DESIGN #25)
+내 연주 이력을 페이지 단위(기본 3개)로 조회한다. 각 항목은 영역별 **문제 개수**(`state != GOOD`) 통계와 **집중 반복 필요 마디**(`focus_measures`)를 포함하며, 협주 기록은 합성 영상 ID를 함께 반환한다. (`feedback_events` 엔 GOOD도 저장되지만 stats는 문제만 센다 — DESIGN #25) `focus_measures` 가 비어있지 않으면 그 세션에 "집중 반복 레슨" 버튼을 노출하고, 각 마디 데이터는 §4.6 마디 상세 조회를 재사용한다(DESIGN #28).
 
 **2. Endpoint + Method**
 `GET /me/history`
@@ -374,6 +373,7 @@
 | items[].stats.pitch | number | Y | 음정 문제 개수(GOOD 제외) | 3 |
 | items[].stats.rhythm | number | Y | 박자 피드백 개수 | 1 |
 | items[].stats.posture | number | Y | 자세 피드백 개수 | 2 |
+| items[].focus_measures | array | Y | 집중 반복 필요 마디(세 영역 모두 `state != GOOD`인 마디). 없으면 `[]` | [5, 7] |
 | items[].duet_composite_id | number | N | 협주 합성 영상 ID(협주 기록만) | 5 |
 
 **9. Success Response Example (2xx)**
@@ -387,9 +387,9 @@
     "page": 1, "size": 3, "total": 7,
     "items": [
       { "session_id": 12, "song_title": "반짝 반짝 작은별", "played_at": "2026-06-02T09:30:00+09:00",
-        "mode": "duet", "stats": { "pitch": 3, "rhythm": 1, "posture": 2 }, "duet_composite_id": 5 },
+        "mode": "duet", "stats": { "pitch": 3, "rhythm": 1, "posture": 2 }, "focus_measures": [5, 7], "duet_composite_id": 5 },
       { "session_id": 10, "song_title": "반짝 반짝 작은별", "played_at": "2026-06-01T18:10:00+09:00",
-        "mode": "solo", "stats": { "pitch": 0, "rhythm": 2, "posture": 1 } }
+        "mode": "solo", "stats": { "pitch": 0, "rhythm": 2, "posture": 1 }, "focus_measures": [] }
     ]
   }
 }
@@ -419,162 +419,7 @@
 
 ---
 
-## 2.3 집중 반복 레슨 추천 조회
-
-**1. API 설명**
-세션 간 누적 폴백 3회 이상으로 추천된(`focus_recommended`) 약점 마디 목록을 조회한다.
-
-**2. Endpoint + Method**
-`GET /me/focus-lessons`
-
-**3. Path Parameter**
-(없음)
-
-**4. Query Parameter**
-(없음)
-
-**5. Request Header**
-| Name | Type | Required | Description | Example |
-|---|---|---|---|---|
-| Authorization | string | Y | Bearer 액세스 토큰 | Bearer eyJhbGciOi... |
-
-**6. Request Body**
-(없음)
-
-**7. Request Example (JSON)**
-(없음)
-
-**8. Response Body**
-| Name | Type | Required | Description | Example |
-|---|---|---|---|---|
-| lessons | array | Y | 추천 약점 마디 목록 | [] |
-| lessons[].song_id | number | Y | 곡 ID | 1 |
-| lessons[].song_title | string | Y | 곡명 | "반짝 반짝 작은별" |
-| lessons[].measure_index | number | Y | 마디 번호 | 1 |
-| lessons[].fallback_count | number | Y | 누적 폴백 횟수 | 3 |
-
-**9. Success Response Example (2xx)**
-`200 OK`
-```json
-{
-  "success": true,
-  "status": 200,
-  "message": "요청에 성공했습니다.",
-  "data": {
-    "lessons": [
-      { "song_id": 1, "song_title": "반짝 반짝 작은별", "measure_index": 1, "fallback_count": 3 },
-      { "song_id": 1, "song_title": "반짝 반짝 작은별", "measure_index": 5, "fallback_count": 4 }
-    ]
-  }
-}
-```
-
-**10. Error Response Example (4xx, 5xx)**
-`401 Unauthorized`
-```json
-{
-  "success": false,
-  "status": 401,
-  "message": "인증이 필요합니다.",
-  "code": "COM_401_001",
-  "meta": { "path": "/me/focus-lessons", "timestamp": 1733132400000 }
-}
-```
-`500 Internal Server Error`
-```json
-{
-  "success": false,
-  "status": 500,
-  "message": "서버 내부 오류가 발생했습니다.",
-  "code": "COM_500_001",
-  "meta": { "path": "/me/focus-lessons", "timestamp": 1733132400000 }
-}
-```
-
----
-
-## 2.4 집중 반복 레슨 완료 보고
-
-**1. API 설명**
-한 약점 마디의 집중 반복 레슨(10회)을 마쳤음을 보고한다. `MeasureProgress.focus_completed`·`focus_attempts` 를 갱신한다. (집중 레슨은 별도 Session 없이 처리)
-
-**2. Endpoint + Method**
-`POST /me/focus-lessons/{song_id}/{measure_index}/complete`
-
-**3. Path Parameter**
-| Name | Type | Required | Description | Example |
-|---|---|---|---|---|
-| song_id | number | Y | 곡 ID | 1 |
-| measure_index | number | Y | 마디 번호 | 1 |
-
-**4. Query Parameter**
-(없음)
-
-**5. Request Header**
-| Name | Type | Required | Description | Example |
-|---|---|---|---|---|
-| Authorization | string | Y | Bearer 액세스 토큰 | Bearer eyJhbGciOi... |
-
-**6. Request Body**
-(없음)
-
-**7. Request Example (JSON)**
-(없음)
-
-**8. Response Body**
-| Name | Type | Required | Description | Example |
-|---|---|---|---|---|
-| song_id | number | Y | 곡 ID | 1 |
-| measure_index | number | Y | 마디 번호 | 1 |
-| focus_completed | boolean | Y | 완료 여부 | true |
-| focus_attempts | number | Y | 누적 완료 횟수 | 1 |
-
-**9. Success Response Example (2xx)**
-`200 OK`
-```json
-{
-  "success": true,
-  "status": 200,
-  "message": "요청에 성공했습니다.",
-  "data": { "song_id": 1, "measure_index": 1, "focus_completed": true, "focus_attempts": 1 }
-}
-```
-
-**10. Error Response Example (4xx, 5xx)**
-`401 Unauthorized`
-```json
-{
-  "success": false,
-  "status": 401,
-  "message": "인증이 필요합니다.",
-  "code": "COM_401_001",
-  "meta": { "path": "/me/focus-lessons/1/1/complete", "timestamp": 1733132400000 }
-}
-```
-`404 Not Found`
-```json
-{
-  "success": false,
-  "status": 404,
-  "message": "추천된 집중 레슨이 아닙니다.",
-  "code": "PRG_404_001",
-  "meta": { "path": "/me/focus-lessons/1/99/complete", "timestamp": 1733132400000 }
-}
-```
-`500 Internal Server Error`
-```json
-{
-  "success": false,
-  "status": 500,
-  "message": "서버 내부 오류가 발생했습니다.",
-  "code": "COM_500_001",
-  "meta": { "path": "/me/focus-lessons/1/1/complete", "timestamp": 1733132400000 }
-}
-```
-
----
-
-## 2.5 협주 영상 목록 조회
+## 2.3 협주 영상 목록 조회
 
 **1. API 설명**
 내가 참여한 협주의 좌우 분할 합성 영상 목록을 조회한다.
@@ -651,7 +496,7 @@
 
 ---
 
-## 2.6 협주 합성 영상 단건 조회
+## 2.4 협주 합성 영상 단건 조회
 
 **1. API 설명**
 협주 합성 영상 1건의 상태를 조회한다. `POST /sessions/{id}/complete` 가 돌려준 `duet_composite_id` 로 합성 잡 진행 상태(`processing → ready/failed`)를 폴링하는 용도다. (합성 잡 = DESIGN #38 `BackgroundTasks`+ffmpeg)
@@ -1127,34 +972,44 @@
 **8. Response Body** (server → client 메시지)
 | Name | Type | Required | Description | Example |
 |---|---|---|---|---|
-| type | string | Y | 메시지 타입 | "feedback" |
+| type | string | Y | 메시지 타입(`feedback` / `feedback_update`) | "feedback" |
 | measure_index | number | Y | 현재 마디 | 12 |
 | items | array | Y | 도메인별 피드백(reward 낮은 영역 먼저, 동률 자세 우선) | [] |
 | items[].domain | string | Y | 영역(pitch/rhythm/posture) | "pitch" |
-| items[].action_id | string | Y | 액션 ID. `-01`=POSITIVE(GOOD 격려) · `-02+`=교정 | "PT-03" |
+| items[].action_id | string | Y | 액션 ID. `-00`=위임(원인 분석) · `-01`=POSITIVE(GOOD 격려) · `-02+`=교정 | "PT-03" |
 | items[].action | string | Y | 액션명 | "PITCH_DOWN" |
-| items[].feedback | string | Y | 피드백 문구 | "음정을 내리세요" |
-| items[].delegated_from | string | N | 위임 출처 영역(슈퍼바이저가 다른 도메인으로 라우팅해 대신 교정 시) | "rhythm" |
-| fallback | object | N | 슈퍼바이저 폴백(위임할 GOOD 아닌 동료가 없을 때만). 없으면 생략 | null |
-| fallback.message | string | N | 폴백 고정 메시지 | "여기서 계속 같은 문제가..." |
-| fallback.fallback_count | number | N | 해당 마디 누적 폴백 횟수(집중레슨 추천 기준) | 3 |
+| items[].feedback | string | Y | 피드백 문구(위임 시 원인 설명, 분석 중이면 "원인 분석 중") | "음정을 내리세요" |
+| items[].cause | object | N | 위임(`-00`) 시 원인 분석 정보. 없으면 생략 | null |
+| items[].cause.pending | boolean | N | 원인 분석 중(LLM 대기). true면 `feedback`="원인 분석 중", `domain` 없음 | true |
+| items[].cause.domain | string | N | 지목된 원인 영역(pitch/rhythm/posture). pending 중엔 없음 | "rhythm" |
+| items[].cause.source | string | N | 원인 산출 출처(`llm` / `heuristic`) | "llm" |
 
 > GOOD 도메인은 `action_id=-01`(POSITIVE) item으로 실시간 격려를 보낸다(WS 전달 + `feedback_events` 에도 기록 — DESIGN #25).
-> 폴백 마디에선 막힌 도메인은 item 없이 `fallback` 객체로 대신 표현하고, 나머지 GOOD 도메인은 POSITIVE item을 함께 보낸다.
+> 위임(`-00`) 마디에선 막힌 도메인 item을 **삭제하지 않고** 그 슬롯에 원인 설명을 담는다(DESIGN #21). 비-GOOD 동료가 있으면 먼저 `cause.pending=true`(`feedback`="원인 분석 중")로 보낸 뒤 LLM 결과가 오면 `feedback_update` 메시지로 그 item을 교체한다(Branch A). 동료가 모두 GOOD이면 룰베이스 휴리스틱으로 원인을 즉시 채운다(`cause.source="heuristic"`, Branch B). 나머지 도메인은 각자 item(GOOD→POSITIVE, 비-GOOD→교정)을 그대로 보낸다.
+> `feedback_update`(server→client) 메시지: `{ "type": "feedback_update", "measure_index": <n>, "item": { ...교체할 도메인 item... } }`. 같은 `measure_index`·`item.domain`의 기존 item을 교체한다(비동기 LLM 원인 분석 결과 도착 시).
 
 **9. Success Response Example (2xx)**
 `101 Switching Protocols` (WebSocket 연결 수립 후 메시지 교환)
 
-교정 + 위임 라우팅 (음정 교정, 박자→자세 위임):
+위임 + LLM 원인 분석 (음정이 막힘, 비-GOOD 동료 있음 → 로딩 먼저):
 ```json
 {
   "type": "feedback",
   "measure_index": 12,
   "items": [
-    { "domain": "pitch", "action_id": "PT-03", "action": "PITCH_DOWN", "feedback": "음정을 내리세요" },
-    { "domain": "posture", "action_id": "PS-03", "action": "SHOULDER_BALANCE", "feedback": "양쪽 어깨 높이를 균형 있게 맞추세요.", "delegated_from": "rhythm" }
-  ],
-  "fallback": null
+    { "domain": "pitch", "action_id": "PT-00", "action": "CALL_SUPERVISOR", "feedback": "원인 분석 중", "cause": { "pending": true } },
+    { "domain": "rhythm", "action_id": "RH-03", "action": "RHYTHM_CATCH_UP", "feedback": "박자보다 늦게 연주하고 있습니다. 박자를 맞추세요" },
+    { "domain": "posture", "action_id": "PS-01", "action": "POSITIVE_POSTURE", "feedback": "잘 하고 있습니다. 계속 유지하세요" }
+  ]
+}
+```
+
+이어서 LLM 결과 도착 → 음정 item 교체:
+```json
+{
+  "type": "feedback_update",
+  "measure_index": 12,
+  "item": { "domain": "pitch", "action_id": "PT-00", "action": "CALL_SUPERVISOR", "feedback": "박자가 밀리면서 음정도 같이 내려간 것 같아요.", "cause": { "pending": false, "domain": "rhythm", "source": "llm" } }
 }
 ```
 
@@ -1166,22 +1021,21 @@
   "items": [
     { "domain": "pitch", "action_id": "PT-01", "action": "POSITIVE_PITCH", "feedback": "잘 하고 있습니다. 계속 유지하세요" },
     { "domain": "rhythm", "action_id": "RH-01", "action": "POSITIVE_RHYTHM", "feedback": "잘 하고 있습니다. 계속 유지하세요" },
-    { "domain": "posture", "action_id": "PS-01", "action": "POSITIVE_T", "feedback": "잘 하고 있습니다. 계속 유지하세요" }
-  ],
-  "fallback": null
+    { "domain": "posture", "action_id": "PS-01", "action": "POSITIVE_POSTURE", "feedback": "잘 하고 있습니다. 계속 유지하세요" }
+  ]
 }
 ```
 
-폴백 (음정이 막혔으나 위임할 동료가 없음 — 나머지는 POSITIVE):
+위임 + 룰베이스 휴리스틱 (음정이 막혔고 동료가 모두 GOOD → 즉시 원인 지목):
 ```json
 {
   "type": "feedback",
   "measure_index": 15,
   "items": [
+    { "domain": "pitch", "action_id": "PT-00", "action": "CALL_SUPERVISOR", "feedback": "왼손 자세를 바로잡으면 음정이 올라와요.", "cause": { "pending": false, "domain": "posture", "source": "heuristic" } },
     { "domain": "rhythm", "action_id": "RH-01", "action": "POSITIVE_RHYTHM", "feedback": "잘 하고 있습니다. 계속 유지하세요" },
-    { "domain": "posture", "action_id": "PS-01", "action": "POSITIVE_T", "feedback": "잘 하고 있습니다. 계속 유지하세요" }
-  ],
-  "fallback": { "message": "여기서 계속 같은 문제가 발생해요. 나중에 반복 연습하면서 개선해봐요", "fallback_count": 3 }
+    { "domain": "posture", "action_id": "PS-01", "action": "POSITIVE_POSTURE", "feedback": "잘 하고 있습니다. 계속 유지하세요" }
+  ]
 }
 ```
 
