@@ -23,10 +23,12 @@
 | COM_500_001 | 500 | 서버 내부 오류가 발생했습니다. |
 | AUT_401_001 | 401 | 이름 또는 비밀번호가 올바르지 않습니다. |
 | SON_404_001 | 404 | 존재하지 않는 곡입니다. |
+| SES_400_001 | 400 | 협주 상대 녹음이 올바르지 않습니다. |
 | SES_403_001 | 403 | 본인의 세션이 아닙니다. |
 | SES_404_001 | 404 | 존재하지 않는 세션입니다. |
 | SES_409_001 | 409 | 이미 종료된 세션입니다. |
 | REC_404_001 | 404 | 존재하지 않는 녹음입니다. |
+| DUE_403_001 | 403 | 본인의 협주 영상이 아닙니다. |
 | DUE_404_001 | 404 | 존재하지 않는 협주 영상입니다. |
 
 ---
@@ -204,64 +206,6 @@
 
 ---
 
-## 1.2 로그아웃
-
-**1. API 설명**
-로그아웃. 서버가 무상태(JWT)이면 클라이언트 토큰 폐기로 충분하며, 서버 측 블랙리스트 운영 시 토큰을 무효화한다.
-
-**2. Endpoint + Method**
-`POST /auth/logout`
-
-**3. Path Parameter**
-(없음)
-
-**4. Query Parameter**
-(없음)
-
-**5. Request Header**
-| Name | Type | Required | Description | Example |
-|---|---|---|---|---|
-| Authorization | string | Y | Bearer 액세스 토큰 | Bearer eyJhbGciOi... |
-
-**6. Request Body**
-(없음)
-
-**7. Request Example (JSON)**
-(없음)
-
-**8. Response Body**
-(없음)
-
-**9. Success Response Example (2xx)**
-`200 OK`
-```json
-{ "success": true, "status": 200, "message": "요청에 성공했습니다." }
-```
-
-**10. Error Response Example (4xx, 5xx)**
-`401 Unauthorized`
-```json
-{
-  "success": false,
-  "status": 401,
-  "message": "인증이 필요합니다.",
-  "code": "COM_401_001",
-  "meta": { "path": "/auth/logout", "timestamp": 1733132400000 }
-}
-```
-`500 Internal Server Error`
-```json
-{
-  "success": false,
-  "status": 500,
-  "message": "서버 내부 오류가 발생했습니다.",
-  "code": "COM_500_001",
-  "meta": { "path": "/auth/logout", "timestamp": 1733132400000 }
-}
-```
-
----
-
 # 2. 사용자 / 마이페이지 (user)
 
 ## 2.1 내 프로필 조회
@@ -334,7 +278,7 @@
 ## 2.2 연주 이력 조회
 
 **1. API 설명**
-내 연주 이력을 페이지 단위(기본 3개)로 조회한다. 각 항목은 영역별 **문제 개수**(`state != GOOD`) 통계와 **집중 반복 필요 마디**(`focus_measures`)를 포함하며, 협주 기록은 합성 영상 ID를 함께 반환한다. (`feedback_events` 엔 GOOD도 저장되지만 stats는 문제만 센다 — DESIGN #25) `focus_measures` 가 비어있지 않으면 그 세션에 "집중 반복 레슨" 버튼을 노출하고, 각 마디 데이터는 §4.6 마디 상세 조회를 재사용한다(DESIGN #28).
+내 연주 이력을 페이지 단위(기본 3개)로 조회한다. 각 항목은 영역별 **문제 개수**(`state != GOOD`) 통계와 **집중 반복 필요 마디**(`focus_measures`)를 포함하며, 협주 기록은 합성 영상 ID를 함께 반환한다. (`feedback_events` 엔 GOOD도 저장되지만 stats는 문제만 센다 — DESIGN #25) `focus_measures` 가 비어있지 않으면 그 세션에 "집중 반복 레슨" 버튼을 노출하고, 각 마디 데이터는 §4.6 마디 상세 조회를 재사용한다(DESIGN #28). 목록은 `played_at` 내림차순(최신순)으로 정렬한다.
 
 **2. Endpoint + Method**
 `GET /me/history`
@@ -371,8 +315,8 @@
 | items[].played_at | string(datetime) | Y | 연주 시각 | "2026-06-02T09:30:00+09:00" |
 | items[].mode | string | Y | 모드(solo/duet) | "duet" |
 | items[].stats.pitch | number | Y | 음정 문제 개수(GOOD 제외) | 3 |
-| items[].stats.rhythm | number | Y | 박자 피드백 개수 | 1 |
-| items[].stats.posture | number | Y | 자세 피드백 개수 | 2 |
+| items[].stats.rhythm | number | Y | 박자 문제 개수(GOOD 제외) | 1 |
+| items[].stats.posture | number | Y | 자세 문제 개수(GOOD 제외) | 2 |
 | items[].focus_measures | array | Y | 집중 반복 필요 마디(세 영역 모두 `state != GOOD`인 마디). 없으면 `[]` | [5, 7] |
 | items[].duet_composite_id | number | N | 협주 합성 영상 ID(협주 기록만) | 5 |
 
@@ -419,87 +363,10 @@
 
 ---
 
-## 2.3 협주 영상 목록 조회
+## 2.3 협주 합성 영상 단건 조회
 
 **1. API 설명**
-내가 참여한 협주의 좌우 분할 합성 영상 목록을 조회한다.
-
-**2. Endpoint + Method**
-`GET /me/duet-videos`
-
-**3. Path Parameter**
-(없음)
-
-**4. Query Parameter**
-(없음)
-
-**5. Request Header**
-| Name | Type | Required | Description | Example |
-|---|---|---|---|---|
-| Authorization | string | Y | Bearer 액세스 토큰 | Bearer eyJhbGciOi... |
-
-**6. Request Body**
-(없음)
-
-**7. Request Example (JSON)**
-(없음)
-
-**8. Response Body**
-| Name | Type | Required | Description | Example |
-|---|---|---|---|---|
-| videos | array | Y | 협주 영상 목록 | [] |
-| videos[].duet_composite_id | number | Y | 합성 영상 ID | 5 |
-| videos[].song_title | string | Y | 곡명 | "반짝 반짝 작은별" |
-| videos[].partner_name | string | Y | 협주 상대 이름 | "이준호" |
-| videos[].composite_video_url | string | N | 합성 영상 URL(ready 시) | "/media/duet/5.mp4" |
-| videos[].status | string | Y | 합성 상태(pending/processing/ready/failed) | "ready" |
-| videos[].created_at | string(datetime) | Y | 생성 시각 | "2026-06-02T09:35:00+09:00" |
-
-**9. Success Response Example (2xx)**
-`200 OK`
-```json
-{
-  "success": true,
-  "status": 200,
-  "message": "요청에 성공했습니다.",
-  "data": {
-    "videos": [
-      { "duet_composite_id": 5, "song_title": "반짝 반짝 작은별", "partner_name": "이준호",
-        "composite_video_url": "/media/duet/5.mp4", "status": "ready",
-        "created_at": "2026-06-02T09:35:00+09:00" }
-    ]
-  }
-}
-```
-
-**10. Error Response Example (4xx, 5xx)**
-`401 Unauthorized`
-```json
-{
-  "success": false,
-  "status": 401,
-  "message": "인증이 필요합니다.",
-  "code": "COM_401_001",
-  "meta": { "path": "/me/duet-videos", "timestamp": 1733132400000 }
-}
-```
-`500 Internal Server Error`
-```json
-{
-  "success": false,
-  "status": 500,
-  "message": "서버 내부 오류가 발생했습니다.",
-  "code": "COM_500_001",
-  "meta": { "path": "/me/duet-videos", "timestamp": 1733132400000 }
-}
-```
-
----
-
-## 2.4 협주 합성 영상 단건 조회
-
-**1. API 설명**
-협주 합성 영상 1건의 상태를 조회한다. `POST /sessions/{id}/complete` 가 돌려준 `duet_composite_id` 로 합성 잡 진행 상태(`processing → ready/failed`)를 폴링하는 용도다. (합성 잡 = DESIGN #38 `BackgroundTasks`+ffmpeg)
+협주 합성 영상 1건의 상태를 조회한다. `POST /sessions/{id}/complete` 가 돌려준 `duet_composite_id` 로 합성 잡 진행 상태(`pending → processing → ready/failed`)를 폴링하는 용도다. (합성 잡 = DESIGN #38 `BackgroundTasks`+ffmpeg)
 
 **2. Endpoint + Method**
 `GET /duet-videos/{duet_composite_id}`
@@ -555,6 +422,16 @@
   "status": 401,
   "message": "인증이 필요합니다.",
   "code": "COM_401_001",
+  "meta": { "path": "/duet-videos/5", "timestamp": 1733132400000 }
+}
+```
+`403 Forbidden`
+```json
+{
+  "success": false,
+  "status": 403,
+  "message": "본인의 협주 영상이 아닙니다.",
+  "code": "DUE_403_001",
   "meta": { "path": "/duet-videos/5", "timestamp": 1733132400000 }
 }
 ```
@@ -752,7 +629,7 @@
 ## 3.3 협주 상대 목록 조회
 
 **1. API 설명**
-해당 곡으로 녹음이 있는 다른 연주자(협주 상대) 목록을 조회한다.
+해당 곡으로 녹음이 있는 다른 연주자(협주 상대) 목록을 조회한다. 요청자 본인의 녹음은 제외한다.
 
 **2. Endpoint + Method**
 `GET /songs/{song_id}/duet-partners`
@@ -839,7 +716,7 @@
 ## 4.1 세션 생성
 
 **1. API 설명**
-연주 세션을 생성한다. `mode` 가 `duet` 이면 `partner_recording_id` 가 필요하다.
+연주 세션을 생성한다. `mode` 가 `duet` 이면 `partner_recording_id` 가 필요하다. 협주 녹음은 **존재**해야 하고(없으면 404 `REC_404_001`), **요청 곡(`song_id`)의 녹음**이며 **요청자 본인의 녹음이 아니어야** 한다(어긋나면 400 `SES_400_001`).
 
 **2. Endpoint + Method**
 `POST /sessions`
@@ -896,6 +773,15 @@
   "meta": { "path": "/sessions", "timestamp": 1733132400000 }
 }
 ```
+```json
+{
+  "success": false,
+  "status": 400,
+  "message": "협주 상대 녹음이 올바르지 않습니다.",
+  "code": "SES_400_001",
+  "meta": { "path": "/sessions", "timestamp": 1733132400000 }
+}
+```
 `401 Unauthorized`
 ```json
 {
@@ -907,6 +793,15 @@
 }
 ```
 `404 Not Found`
+```json
+{
+  "success": false,
+  "status": 404,
+  "message": "존재하지 않는 곡입니다.",
+  "code": "SON_404_001",
+  "meta": { "path": "/sessions", "timestamp": 1733132400000 }
+}
+```
 ```json
 {
   "success": false,
@@ -1155,6 +1050,16 @@ Content-Type: video/webm
   "meta": { "path": "/sessions/12/complete", "timestamp": 1733132400000 }
 }
 ```
+`404 Not Found`
+```json
+{
+  "success": false,
+  "status": 404,
+  "message": "존재하지 않는 세션입니다.",
+  "code": "SES_404_001",
+  "meta": { "path": "/sessions/999/complete", "timestamp": 1733132400000 }
+}
+```
 `409 Conflict`
 ```json
 {
@@ -1225,6 +1130,16 @@ Content-Type: video/webm
   "meta": { "path": "/sessions/12/abort", "timestamp": 1733132400000 }
 }
 ```
+`403 Forbidden`
+```json
+{
+  "success": false,
+  "status": 403,
+  "message": "본인의 세션이 아닙니다.",
+  "code": "SES_403_001",
+  "meta": { "path": "/sessions/12/abort", "timestamp": 1733132400000 }
+}
+```
 `404 Not Found`
 ```json
 {
@@ -1233,6 +1148,16 @@ Content-Type: video/webm
   "message": "존재하지 않는 세션입니다.",
   "code": "SES_404_001",
   "meta": { "path": "/sessions/999/abort", "timestamp": 1733132400000 }
+}
+```
+`409 Conflict`
+```json
+{
+  "success": false,
+  "status": 409,
+  "message": "이미 종료된 세션입니다.",
+  "code": "SES_409_001",
+  "meta": { "path": "/sessions/12/abort", "timestamp": 1733132400000 }
 }
 ```
 `500 Internal Server Error`
@@ -1280,13 +1205,20 @@ Content-Type: video/webm
 |---|---|---|---|---|
 | session_id | number | Y | 세션 ID | 12 |
 | song_id | number | Y | 곡 ID | 1 |
+| song_title | string | Y | 곡명(헤더 표시용) | "반짝 반짝 작은별" |
+| played_at | string(datetime) | Y | 연주 시각(헤더 표시용) | "2026-06-02T09:30:00+09:00" |
 | mode | string | Y | 모드 | "duet" |
+| partner_name | string | N | 협주 상대 이름(duet만) | "이준호" |
 | measures | array | Y | 마디별 마킹 | [] |
 | measures[].measure_index | number | Y | 마디 번호 | 1 |
 | measures[].current | array | Y | 이번 세션 마킹(채움) | [] |
 | measures[].current[].domain | string | Y | 영역 | "pitch" |
+| measures[].current[].action_id | string | Y | 액션 ID(`-00`=위임 원인 → 무지개, `-02+`=교정) | "PT-03" |
 | measures[].current[].feedback | string | Y | 피드백(도메인당 1개) | "음정을 내리세요" |
 | measures[].previous | array | Y | 직전 세션 마킹(외곽선) | [] |
+| measures[].previous[].domain | string | Y | 영역 | "rhythm" |
+| measures[].previous[].action_id | string | Y | 액션 ID | "RH-03" |
+| measures[].previous[].feedback | string | Y | 피드백(도메인당 1개) | "박자보다 늦게 연주하고 있습니다" |
 
 **9. Success Response Example (2xx)**
 `200 OK`
@@ -1296,11 +1228,11 @@ Content-Type: video/webm
   "status": 200,
   "message": "요청에 성공했습니다.",
   "data": {
-    "session_id": 12, "song_id": 1, "mode": "duet",
+    "session_id": 12, "song_id": 1, "song_title": "반짝 반짝 작은별", "played_at": "2026-06-02T09:30:00+09:00", "mode": "duet", "partner_name": "이준호",
     "measures": [
       { "measure_index": 1,
-        "current": [ { "domain": "pitch", "feedback": "음정을 내리세요" } ],
-        "previous": [ { "domain": "rhythm", "feedback": "박자보다 늦게 연주하고 있습니다" } ] }
+        "current": [ { "domain": "pitch", "action_id": "PT-03", "feedback": "음정을 내리세요" } ],
+        "previous": [ { "domain": "rhythm", "action_id": "RH-03", "feedback": "박자보다 늦게 연주하고 있습니다" } ] }
     ]
   }
 }
@@ -1314,6 +1246,16 @@ Content-Type: video/webm
   "status": 401,
   "message": "인증이 필요합니다.",
   "code": "COM_401_001",
+  "meta": { "path": "/sessions/12/result", "timestamp": 1733132400000 }
+}
+```
+`403 Forbidden`
+```json
+{
+  "success": false,
+  "status": 403,
+  "message": "본인의 세션이 아닙니다.",
+  "code": "SES_403_001",
   "meta": { "path": "/sessions/12/result", "timestamp": 1733132400000 }
 }
 ```
@@ -1372,11 +1314,19 @@ Content-Type: video/webm
 | Name | Type | Required | Description | Example |
 |---|---|---|---|---|
 | measure_index | number | Y | 마디 번호 | 1 |
-| notes | array | Y | 음표 배열 | [] |
+| notes | array | Y | 음표 배열(필드는 §3.2 악보 조회와 동일) | [] |
+| notes[].pitch | string | Y | 음높이 | "C4" |
+| notes[].duration | string | Y | 음길이 | "quarter" |
+| notes[].position | number | Y | 마디 내 박 위치 | 0 |
+| notes[].lyric | string | N | 가사 음절 | "반" |
 | current_markings | array | Y | 이번 세션 마킹 | [] |
 | current_markings[].domain | string | Y | 영역 | "pitch" |
+| current_markings[].action_id | string | Y | 액션 ID(`-00`=위임 원인 → 무지개, `-02+`=교정) | "PT-03" |
 | current_markings[].feedback | string | Y | 피드백(도메인당 1개) | "음정을 내리세요" |
 | previous_markings | array | Y | 이전 세션 마킹(참고) | [] |
+| previous_markings[].domain | string | Y | 영역 | "rhythm" |
+| previous_markings[].action_id | string | Y | 액션 ID | "RH-03" |
+| previous_markings[].feedback | string | Y | 피드백(도메인당 1개) | "박자보다 늦게 연주하고 있습니다" |
 
 **9. Success Response Example (2xx)**
 `200 OK`
@@ -1388,7 +1338,7 @@ Content-Type: video/webm
   "data": {
     "measure_index": 1,
     "notes": [ { "pitch": "C4", "duration": "quarter", "position": 0, "lyric": "반" } ],
-    "current_markings": [ { "domain": "pitch", "feedback": "음정을 내리세요" } ],
+    "current_markings": [ { "domain": "pitch", "action_id": "PT-03", "feedback": "음정을 내리세요" } ],
     "previous_markings": []
   }
 }
@@ -1402,6 +1352,16 @@ Content-Type: video/webm
   "status": 401,
   "message": "인증이 필요합니다.",
   "code": "COM_401_001",
+  "meta": { "path": "/sessions/12/measures/1", "timestamp": 1733132400000 }
+}
+```
+`403 Forbidden`
+```json
+{
+  "success": false,
+  "status": 403,
+  "message": "본인의 세션이 아닙니다.",
+  "code": "SES_403_001",
   "meta": { "path": "/sessions/12/measures/1", "timestamp": 1733132400000 }
 }
 ```
@@ -1431,7 +1391,7 @@ Content-Type: video/webm
 ## 4.7 AI 상세 분석 조회
 
 **1. API 설명**
-세션의 AI 상세 분석(디브리핑 + 영역별 수준·진단·연습)을 조회한다. 없으면 첫 호출에서 `/coach` LLM(OpenAI)으로 **동기 생성**(수 초 블로킹)한 뒤 캐시하며, 이후 같은 세션은 저장본을 반환한다. (백그라운드 잡 아님 — DESIGN #31)
+세션의 AI 상세 분석(디브리핑 + 영역별 수준·진단·연습)을 조회한다. 없으면 첫 호출에서 `/coach` LLM(OpenAI)으로 **동기 생성**(수 초 블로킹)한 뒤 캐시하며, 이후 같은 세션은 저장본을 반환한다. (백그라운드 잡 아님 — DESIGN #31) 세 영역이 모두 무너진 마디(`focus_measures`)도 함께 반환해 '집중 반복 레슨' 진입에 쓴다(`feedback_events` 에서 도출, 캐시 대상 아님 — DESIGN #28).
 
 **2. Endpoint + Method**
 `GET /sessions/{session_id}/analysis`
@@ -1466,6 +1426,7 @@ Content-Type: video/webm
 | domains.pitch.practice | string | N | 음정 연습 처방(good이면 없음) | "스케일을 천천히..." |
 | domains.rhythm | object | Y | 박자 분석(동일 구조) | {} |
 | domains.posture | object | Y | 자세 분석(동일 구조) | {} |
+| focus_measures | array | Y | 세 영역 모두 `state != GOOD`인 마디(집중 반복 레슨용). 없으면 `[]` | [5, 7] |
 
 **9. Success Response Example (2xx)**
 `200 OK`
@@ -1482,7 +1443,8 @@ Content-Type: video/webm
       "pitch": { "level": "weak", "diagnosis": "높은 음에서 음정이 올라갔어요", "practice": "스케일을 천천히 반복해보세요" },
       "rhythm": { "level": "ok", "diagnosis": "일부 구간에서 살짝 늦었어요", "practice": "메트로놈에 맞춰 연습해보세요" },
       "posture": { "level": "good", "diagnosis": "자세는 안정적이었어요" }
-    }
+    },
+    "focus_measures": [5, 7]
   }
 }
 ```
@@ -1495,6 +1457,16 @@ Content-Type: video/webm
   "status": 401,
   "message": "인증이 필요합니다.",
   "code": "COM_401_001",
+  "meta": { "path": "/sessions/12/analysis", "timestamp": 1733132400000 }
+}
+```
+`403 Forbidden`
+```json
+{
+  "success": false,
+  "status": 403,
+  "message": "본인의 세션이 아닙니다.",
+  "code": "SES_403_001",
   "meta": { "path": "/sessions/12/analysis", "timestamp": 1733132400000 }
 }
 ```
