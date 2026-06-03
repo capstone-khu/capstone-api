@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from app.common.config import settings
 from app.common.persistence import Base
+from app.domain.user.model import User  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -18,7 +19,6 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# 로컬·배포 공통으로 앱과 동일한 설정에서 접속 정보를 읽는다.
 DATABASE_URL = settings.DATABASE_URL
 
 target_metadata = Base.metadata
