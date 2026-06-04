@@ -716,7 +716,7 @@
 ## 4.1 세션 생성
 
 **1. API 설명**
-연주 세션을 생성한다. `mode` 가 `duet` 이면 `partner_recording_id` 가 필요하다. 협주 녹음은 **존재**해야 하고(없으면 404 `REC_404_001`), **요청 곡(`song_id`)의 녹음**이며 **요청자 본인의 녹음이 아니어야** 한다(어긋나면 400 `SES_400_001`).
+연주 세션을 생성한다. `mode` 가 `duet` 이면 `partner_recording_id` 가 필요하다. 협주 녹음은 **존재**해야 하고(없으면 404 `REC_404_001`), **요청 곡(`song_id`)의 녹음**이며 **요청자 본인의 녹음이 아니어야** 한다(어긋나면 400 `SES_400_001`). `duet` 이면 응답에 협주 상대 이름(`partner_name`)과 라이브 재생용 음원 URL(`audio_url`)을 함께 반환해, 연주 화면이 "협주 · {상대} 음원 재생 중"을 자족적으로 그릴 수 있게 한다(상대 음원은 소리만 재생, 영상은 미노출 — DESIGN #37).
 
 **2. Endpoint + Method**
 `POST /sessions`
@@ -750,6 +750,8 @@
 |---|---|---|---|---|
 | session_id | number | Y | 생성된 세션 ID | 12 |
 | status | string | Y | 세션 상태 | "created" |
+| partner_name | string | N | 협주 상대 이름(duet만) | "손수민" |
+| audio_url | string | N | 협주 상대 음원 URL(duet만, 라이브 재생용·오디오 트랙) | "/media/recordings/1.mp4" |
 
 **9. Success Response Example (2xx)**
 `201 Created`
@@ -758,7 +760,7 @@
   "success": true,
   "status": 201,
   "message": "리소스가 생성되었습니다.",
-  "data": { "session_id": 12, "status": "created" }
+  "data": { "session_id": 12, "status": "created", "partner_name": "손수민", "audio_url": "/media/recordings/1.mp4" }
 }
 ```
 
