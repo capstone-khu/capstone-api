@@ -5,6 +5,7 @@ from app.common import health
 from app.common.config import settings
 from app.common.exception.handlers import add_exception_handlers
 from app.domain.auth import router as auth_router
+from app.domain.song import router as song_router
 from app.domain.user import router as user_router
 
 DESCRIPTION = """\
@@ -20,7 +21,10 @@ TAGS_METADATA = [
     {"name": "auth", "description": "로그인·로그아웃·JWT 발급."},
     {"name": "user", "description": "사용자 프로필·연주 이력·마이페이지."},
     {"name": "song", "description": "곡·악보·협주 상대 조회."},
-    {"name": "session", "description": "연주 세션 생성·실시간 스트림·종료·결과·AI 분석."},
+    {
+        "name": "session",
+        "description": "연주 세션 생성·실시간 스트림·종료·결과·AI 분석.",
+    },
     {"name": "agent", "description": "멀티에이전트 코칭 피드백."},
 ]
 
@@ -45,4 +49,5 @@ add_exception_handlers(app)
 
 app.include_router(health.router)
 app.include_router(auth_router.router)
+app.include_router(song_router.router)
 app.include_router(user_router.router)
