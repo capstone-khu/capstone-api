@@ -1,5 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 
+from app.common.types import KSTDateTime
+
 
 class SongSummary(BaseModel):
     id: int
@@ -79,3 +81,29 @@ class ScoreResponse(BaseModel):
 
     song: SongDetail
     measures: list[ScoreMeasure]
+
+
+class DuetPartner(BaseModel):
+    recording_id: int
+    user_name: str
+    song_title: str
+    recorded_at: KSTDateTime
+
+
+class DuetPartnersResponse(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "partners": [
+                    {
+                        "recording_id": 1,
+                        "user_name": "손수민",
+                        "song_title": "반짝 반짝 작은별",
+                        "recorded_at": "2026-06-01T10:00:00+09:00",
+                    }
+                ]
+            }
+        }
+    )
+
+    partners: list[DuetPartner]

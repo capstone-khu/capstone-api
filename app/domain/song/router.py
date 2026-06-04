@@ -9,7 +9,11 @@ from app.common.openapi import error_responses, success_response
 from app.common.persistence import get_db
 from app.common.response import ApiResponse
 from app.domain.auth.dependencies import get_current_user
-from app.domain.song.schema import ScoreResponse, SongListResponse
+from app.domain.song.schema import (
+    DuetPartnersResponse,
+    ScoreResponse,
+    SongListResponse,
+)
 from app.domain.song.service import SongService
 from app.domain.user.model import User
 
@@ -93,4 +97,44 @@ async def get_score(
     db: AsyncSession = Depends(get_db),
 ) -> ApiResponse[ScoreResponse, None]:
     data = await SongService(db).get_score(song_id)
+    return ApiResponse.ok(SuccessCode.OK, data)
+
+
+@router.get(
+    "/{song_id}/duet-partners",
+    summary="협주 상대 목록 조회",
+    description=(
+        "해당 곡으로 녹음이 있는 다른 연주자(협주 상대) 목록을 조회한다. "
+        "요청자 본인의 녹음은 제외한다."
+    ),
+    response_model=ApiResponse[DuetPartnersResponse, None],
+    response_model_exclude_none=True,
+    responses={
+        **success_response(
+            200,
+            {
+                "success": True,
+                "status": 200,
+                "message": "요청에 성공했습니다.",
+                "data": {
+                    "partners": [
+                        {
+                            "recording_id": 1,
+                            "user_name": "손수민",
+                            "song_title": "반짝 반짝 작은별",
+                            "recorded_at": "2026-06-01T10:00:00+09:00",
+                        }
+                    ]
+                },
+            },
+        ),
+        **error_responses(ErrorCode.UNAUTHORIZED, ErrorCode.SONG_NOT_FOUND),
+    },
+)
+async def list_duet_partners(
+    song_id: int,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[DuetPartnersResponse, None]:
+    data = await SongService(db).list_duet_partners(song_id, current_user.id)
     return ApiResponse.ok(SuccessCode.OK, data)
