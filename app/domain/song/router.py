@@ -9,7 +9,7 @@ from app.common.openapi import error_responses, success_response
 from app.common.persistence import get_db
 from app.common.response import ApiResponse
 from app.domain.auth.dependencies import get_current_user
-from app.domain.song.schema import SongListResponse
+from app.domain.song.schema import ScoreResponse, SongListResponse
 from app.domain.song.service import SongService
 from app.domain.user.model import User
 
@@ -43,4 +43,54 @@ async def list_songs(
     db: AsyncSession = Depends(get_db),
 ) -> ApiResponse[SongListResponse, None]:
     data = await SongService(db).list_songs()
+    return ApiResponse.ok(SuccessCode.OK, data)
+
+
+@router.get(
+    "/{song_id}/score",
+    summary="악보 조회",
+    description="한 곡의 악보를 마디·음표·가사 단위로 조회한다.",
+    response_model=ApiResponse[ScoreResponse, None],
+    response_model_exclude_none=True,
+    responses={
+        **success_response(
+            200,
+            {
+                "success": True,
+                "status": 200,
+                "message": "요청에 성공했습니다.",
+                "data": {
+                    "song": {
+                        "id": 1,
+                        "number": 1,
+                        "title": "반짝 반짝 작은별",
+                        "bpm": 96,
+                        "time_signature": "4/4",
+                        "total_measures": 12,
+                    },
+                    "measures": [
+                        {
+                            "measure_index": 1,
+                            "notes": [
+                                {
+                                    "pitch": "D4",
+                                    "duration": "quarter",
+                                    "position": 0,
+                                    "lyric": "반",
+                                }
+                            ],
+                        }
+                    ],
+                },
+            },
+        ),
+        **error_responses(ErrorCode.UNAUTHORIZED, ErrorCode.SONG_NOT_FOUND),
+    },
+)
+async def get_score(
+    song_id: int,
+    _: Annotated[User, Depends(get_current_user)],
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[ScoreResponse, None]:
+    data = await SongService(db).get_score(song_id)
     return ApiResponse.ok(SuccessCode.OK, data)
