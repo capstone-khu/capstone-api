@@ -8,6 +8,8 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from app.common.config import settings
 from app.common.persistence import Base
+from app.domain.session.model import Recording, Session  # noqa: F401
+from app.domain.song.model import Song, SongMeasure  # noqa: F401
 from app.domain.user.model import User  # noqa: F401
 
 # this is the Alembic Config object, which provides

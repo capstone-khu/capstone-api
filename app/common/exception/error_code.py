@@ -12,6 +12,9 @@ class ErrorCode(Enum):
     # ===== AUTH =====
     LOGIN_FAILED = (401, "AUT_401_001", "이름 또는 비밀번호가 올바르지 않습니다.")
 
+    # ===== SONG =====
+    SONG_NOT_FOUND = (404, "SON_404_001", "존재하지 않는 곡입니다.")
+
     def __init__(self, status: int, code: str, message: str) -> None:
         self.status = status
         self.code = code
