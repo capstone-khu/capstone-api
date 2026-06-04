@@ -716,7 +716,7 @@
 ## 4.1 세션 생성
 
 **1. API 설명**
-연주 세션을 생성한다. `mode` 가 `duet` 이면 `partner_recording_id` 가 필요하다. 협주 녹음은 **존재**해야 하고(없으면 404 `REC_404_001`), **요청 곡(`song_id`)의 녹음**이며 **요청자 본인의 녹음이 아니어야** 한다(어긋나면 400 `SES_400_001`).
+연주 세션을 생성한다. `mode` 가 `duet` 이면 `partner_recording_id` 가 필요하다. 협주 녹음은 **존재**해야 하고(없으면 404 `REC_404_001`), **요청 곡(`song_id`)의 녹음**이며 **요청자 본인의 녹음이 아니어야** 한다(어긋나면 400 `SES_400_001`). 응답은 연주 화면 자족용으로 곡명(`song_title`)을 포함하며, `duet` 이면 협주 상대 이름(`partner_name`)과 라이브 재생용 음원 URL(`audio_url`)도 함께 반환해 "협주 · {상대} 음원 재생 중"을 자족적으로 그릴 수 있게 한다(상대 음원은 소리만 재생, 영상은 미노출 — DESIGN #37).
 
 **2. Endpoint + Method**
 `POST /sessions`
@@ -750,6 +750,9 @@
 |---|---|---|---|---|
 | session_id | number | Y | 생성된 세션 ID | 12 |
 | status | string | Y | 세션 상태 | "created" |
+| song_title | string | Y | 곡명(연주 화면 헤더 표시용) | "반짝 반짝 작은별" |
+| partner_name | string | N | 협주 상대 이름(duet만) | "손수민" |
+| audio_url | string | N | 협주 상대 음원 URL(duet만, 라이브 재생용·오디오 트랙) | "/media/recordings/1.mp4" |
 
 **9. Success Response Example (2xx)**
 `201 Created`
@@ -758,7 +761,7 @@
   "success": true,
   "status": 201,
   "message": "리소스가 생성되었습니다.",
-  "data": { "session_id": 12, "status": "created" }
+  "data": { "session_id": 12, "status": "created", "song_title": "반짝 반짝 작은별", "partner_name": "손수민", "audio_url": "/media/recordings/1.mp4" }
 }
 ```
 
@@ -1488,5 +1491,119 @@ Content-Type: video/webm
   "message": "서버 내부 오류가 발생했습니다.",
   "code": "COM_500_001",
   "meta": { "path": "/sessions/12/analysis", "timestamp": 1733132400000 }
+}
+```
+
+---
+
+## 4.8 직전 세션 마킹 조회
+
+**1. API 설명**
+연주(라이브) 화면이 시작될 때, **직전 완료 세션의 마디별 마킹(외곽선)** 을 한 번에 미리 받아오는 용도다. 연주 화면은 이번 세션 마킹을 WS로 실시간 채우고(채움), 이 응답으로 받은 직전 세션 마킹을 외곽선으로 겹쳐 "여기서 실수했었지"를 마디 도착 전부터 보여준다(도착 시 왼쪽에 직전 피드백을 현재 피드백과 함께 표시). 직전 세션 기준은 **같은 user×song 의 모드 무관 직전 완료(completed) 세션**(DESIGN #30)이며, 마킹은 결과 화면과 동일하게 **문제 마디만**(`state != GOOD`)이다. WS 연결 전에 호출한다(외곽선을 카운트인 단계부터 그릴 수 있도록).
+
+**2. Endpoint + Method**
+`GET /sessions/{session_id}/previous-markings`
+
+**3. Path Parameter**
+| Name | Type | Required | Description | Example |
+|---|---|---|---|---|
+| session_id | number | Y | 이번(현재) 세션 ID | 12 |
+
+**4. Query Parameter**
+(없음)
+
+**5. Request Header**
+| Name | Type | Required | Description | Example |
+|---|---|---|---|---|
+| Authorization | string | Y | Bearer 액세스 토큰 | Bearer eyJhbGciOi... |
+
+**6. Request Body**
+(없음)
+
+**7. Request Example (JSON)**
+(없음)
+
+**8. Response Body**
+| Name | Type | Required | Description | Example |
+|---|---|---|---|---|
+| previous_session_id | number | N | 직전 완료 세션 ID(없으면 생략) | 10 |
+| measures | array | Y | 직전 세션 마디별 마킹(문제 마디만, 없으면 빈 배열) | [] |
+| measures[].measure_index | number | Y | 마디 번호 | 4 |
+| measures[].markings | array | Y | 그 마디의 도메인별 마킹(도메인당 1개) | [] |
+| measures[].markings[].domain | string | Y | 영역(pitch/rhythm/posture) | "pitch" |
+| measures[].markings[].action_id | string | Y | 액션 ID(`-00`=위임 원인 → 무지개, `-02+`=교정) | "PT-03" |
+| measures[].markings[].feedback | string | Y | 피드백(도메인당 1개) | "음정을 내리세요" |
+
+**9. Success Response Example (2xx)**
+`200 OK`
+```json
+{
+  "success": true,
+  "status": 200,
+  "message": "요청에 성공했습니다.",
+  "data": {
+    "previous_session_id": 10,
+    "measures": [
+      { "measure_index": 4, "markings": [
+        { "domain": "pitch", "action_id": "PT-03", "feedback": "음정을 내리세요" }
+      ] },
+      { "measure_index": 7, "markings": [
+        { "domain": "pitch", "action_id": "PT-03", "feedback": "음정을 내리세요" },
+        { "domain": "rhythm", "action_id": "RH-03", "feedback": "박자보다 늦게 연주하고 있습니다" }
+      ] }
+    ]
+  }
+}
+```
+
+직전 완료 세션이 없으면(첫 연주):
+```json
+{
+  "success": true,
+  "status": 200,
+  "message": "요청에 성공했습니다.",
+  "data": { "measures": [] }
+}
+```
+
+**10. Error Response Example (4xx, 5xx)**
+`401 Unauthorized`
+```json
+{
+  "success": false,
+  "status": 401,
+  "message": "인증이 필요합니다.",
+  "code": "COM_401_001",
+  "meta": { "path": "/sessions/12/previous-markings", "timestamp": 1733132400000 }
+}
+```
+`403 Forbidden`
+```json
+{
+  "success": false,
+  "status": 403,
+  "message": "본인의 세션이 아닙니다.",
+  "code": "SES_403_001",
+  "meta": { "path": "/sessions/12/previous-markings", "timestamp": 1733132400000 }
+}
+```
+`404 Not Found`
+```json
+{
+  "success": false,
+  "status": 404,
+  "message": "존재하지 않는 세션입니다.",
+  "code": "SES_404_001",
+  "meta": { "path": "/sessions/999/previous-markings", "timestamp": 1733132400000 }
+}
+```
+`500 Internal Server Error`
+```json
+{
+  "success": false,
+  "status": 500,
+  "message": "서버 내부 오류가 발생했습니다.",
+  "code": "COM_500_001",
+  "meta": { "path": "/sessions/12/previous-markings", "timestamp": 1733132400000 }
 }
 ```
