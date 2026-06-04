@@ -24,9 +24,8 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = "/api/v1"
     DEBUG: bool = False
 
-    CORS_ORIGINS: Annotated[list[str] | str, BeforeValidator(_parse_cors)] = [
-        "http://localhost:5173"
-    ]
+    CORS_ORIGINS: Annotated[list[str] | str, BeforeValidator(_parse_cors)] = []
+    CORS_ORIGIN_REGEX: str | None = r"http://(localhost|127\.0\.0\.1):\d+"
 
     MYSQL_HOST: str = "localhost"
     MYSQL_PORT: int = 3306
