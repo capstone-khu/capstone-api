@@ -13,7 +13,7 @@
 | 기록 범위     | 마디마다 모든 도메인 출력을 `feedback_events`에 저장(GOOD/POSITIVE 포함, (measure, domain)당 최대 1행).                                 |
 | 출력 형식     | `{agent, measure, state, action_id, action, feedback, reward, q, meta}`                                            |
 | action_id | 도메인 프리픽스 `PT`/`RH`/`PS` + `-00` 위임 · `-01` POSITIVE · `-02+` 교정                                                    |
-| `-00` 피드백 | 고정 문구 아님 — 슈퍼바이저가 산출한 **원인 설명**(비-GOOD 동료 있으면 LLM, 동료 전원 GOOD이면 룰베이스 휴리스틱). 분석 대기 중엔 "원인 분석 중"(§4). |
+| `-00` 피드백 | 고정 문구 아님 — 슈퍼바이저가 LLM으로 산출한 **원인 설명**(동료 전원 GOOD이면 막힌 도메인 자신=self). 분석 대기 중엔 "원인 분석 중"(§4). |
 | `-01` 피드백 | 세 도메인 동일 — "잘 하고 있습니다. 계속 유지하세요"                                                                                   |
 
 
@@ -59,7 +59,7 @@
 
 | action_id | action          | feedback                               | 발동 state                   |
 | --------- | --------------- | -------------------------------------- | -------------------------- |
-| PT-00     | CALL_SUPERVISOR | 슈퍼바이저 산출 원인 설명(LLM/휴리스틱, §4)         | GOOD 외 모든 state            |
+| PT-00     | CALL_SUPERVISOR | 슈퍼바이저 산출 원인 설명(LLM, §4)         | GOOD 외 모든 state            |
 | PT-01     | POSITIVE_PITCH  | 잘 하고 있습니다. 계속 유지하세요                    | GOOD                       |
 | PT-02     | PITCH_UP        | 음정을 올리세요                               | FLAT_SLIGHT / FLAT_MAJOR   |
 | PT-03     | PITCH_DOWN      | 음정을 내리세요                               | SHARP_SLIGHT / SHARP_MAJOR |
@@ -92,7 +92,7 @@
 
 | action_id | action          | feedback                               | 발동 state        |
 | --------- | --------------- | -------------------------------------- | --------------- |
-| RH-00     | CALL_SUPERVISOR | 슈퍼바이저 산출 원인 설명(LLM/휴리스틱, §4)         | GOOD 외 모든 state |
+| RH-00     | CALL_SUPERVISOR | 슈퍼바이저 산출 원인 설명(LLM, §4)         | GOOD 외 모든 state |
 | RH-01     | POSITIVE_RHYTHM | 잘 하고 있습니다. 계속 유지하세요                    | GOOD            |
 | RH-02     | RHYTHM_WAIT     | 박자보다 일찍 연주하고 있습니다. 박자를 맞추세요            | EARLY           |
 | RH-03     | RHYTHM_CATCH_UP | 박자보다 늦게 연주하고 있습니다. 박자를 맞추세요            | LATE            |
@@ -129,7 +129,7 @@
 
 | action_id | action                 | feedback                               | 발동 state              |
 | --------- | ---------------------- | -------------------------------------- | --------------------- |
-| PS-00     | CALL_SUPERVISOR        | 슈퍼바이저 산출 원인 설명(LLM/휴리스틱, §4)         | GOOD 외 모든 state       |
+| PS-00     | CALL_SUPERVISOR        | 슈퍼바이저 산출 원인 설명(LLM, §4)         | GOOD 외 모든 state       |
 | PS-01     | POSITIVE_POSTURE       | 잘 하고 있습니다. 계속 유지하세요                    | GOOD                  |
 | PS-02     | HAND_ALIGNMENT_CORRECT | 왼손과 어깨 사이 거리를 안정적으로 유지하세요.             | LEFT_HAND_ALIGNMENT   |
 | PS-03     | SHOULDER_BALANCE       | 양쪽 어깨 높이를 균형 있게 맞추세요.                  | SHOULDER_IMBALANCE    |
@@ -151,30 +151,44 @@
 도메인 D에서 `CALL_SUPERVISOR`(-00)가 선택되면, 막힌 도메인 슬롯을 **삭제하지 않고** 그 자리에
 **원인 1개**를 설명한다. 동료에게 슬롯을 넘기지 않으며, 나머지 도메인은 각자 item을 그대로 낸다.
 
-- **Branch A — 비-GOOD 동료 ≥ 1 (LLM):** 다른 두 도메인의 `{state, action, meta}`를 LLM(OpenAI)에 전달해
-  주원인 1개와 설명을 생성한다. 실시간 핫 루프를 막지 않도록 **비동기 보강**으로 처리한다 — 먼저 D 슬롯에
-  "원인 분석 중"(`cause.pending=true`)을 보내고, LLM 결과가 오면 `feedback_update`로 교체한다(`cause.source="llm"`).
-- **Branch B — 동료 둘 다 GOOD (룰베이스 휴리스틱):** LLM 없이 아래 매핑으로 원인 1개를 즉시 채운다
-  (`cause.source="heuristic"`).
+위임은 **LLM(OpenAI) 단일 경로**다(룰베이스 휴리스틱·Branch 분기 폐기). 실시간 핫 루프를 막지 않도록
+**비동기 보강**으로 처리한다 — 먼저 D 슬롯에 "원인 분석 중"(`cause.pending=true`)을 보내고, LLM 결과가
+오면 `feedback_update`로 교체한다.
 
-각 도메인 meta는 원인 분석 입력이다(예: rhythm `drift_label`·`score`, posture `feature`·`risk_percent`,
-pitch `avg_cents`·`state`).
+- 비-GOOD 동료가 ≥ 1이면, LLM이 그 동료 또는 막힌 도메인 자신 중에서 주원인 1개를 고른다.
+- **동료가 둘 다 GOOD이면 외부 원인이 없으므로 원인 도메인을 막힌 도메인 자신(self)으로 고정**하고,
+  LLM은 설명 텍스트만 생성한다(예: "자세·박자는 안정적인데 음정만 흔들려요. 첫 음 짚는 손가락 위치를
+  점검해보세요."). self 고정은 슈퍼바이저가 강제하며 LLM 판단에 맡기지 않는다(멀쩡한 동료 오지목 방지).
 
-### 휴리스틱 매핑 (Branch B 전용)
+### 에이전트 → 슈퍼바이저 입력 (per-마디)
 
-> **바이올린 교습 직관**에 기반한다 — 음정·박자 문제의 근본 원인은 대개 **자세(셋업)** 이고,
-> 그 안에서 **왼손 자세 ↔ 음정**, **활 잡은 오른팔 자세 ↔ 박자** 가 짝을 이룬다. 그래서
-> ① 음정이 막히면 → 왼손 자세, ② 박자가 막히면 → 오른팔(활) 자세를 원인으로 가리킨다.
-> 반대로 ③ 자세가 막혔는데 음정·박자가 멀쩡하면, 그 자세 부위에 맞는 감각
-> (왼손부 → 음정, 오른팔부 → 박자)을 지렛대로 가리킨다. 메시지는 다른 피드백처럼 **한 문장**으로
-> 짧게 통일한다(전문용어 '보잉' 등은 쓰지 않음). (운영하며 조정 가능)
+각 도메인 에이전트는 마디마다 아래 출력 1개를 낸다(= `feedback_events` 행과 같은 모양, `cause_*` 제외):
 
-| 막힌 도메인 | state | 원인 도메인 | 메시지 |
-| --- | --- | --- | --- |
-| pitch | FLAT_SLIGHT / FLAT_MAJOR | posture | 왼손 자세를 바로잡으면 음정이 올라와요. |
-| pitch | SHARP_SLIGHT / SHARP_MAJOR | posture | 어깨와 왼손 힘을 빼면 음정이 잡혀요. |
-| rhythm | EARLY / LATE | posture | 활 자세를 안정시키면 박자가 맞아요. |
-| rhythm | FAST / SLOW | posture | 오른팔 힘을 빼면 템포가 안정돼요. |
-| posture | LEFT_HAND_ALIGNMENT / LEFT_WRIST_MOVEMENT / LEFT_ARM_POSTURE / SHOULDER_IMBALANCE | pitch | 왼손으로 음 짚기에 집중하면 자세가 풀려요. |
-| posture | RIGHT_ARM_BOWING / RIGHT_WRIST_ALIGNMENT | rhythm | 박자에 맞춰 활을 그으면 자세가 안정돼요. |
-| posture | (그 외 / PS-99) | rhythm | 박자에 맞춰 천천히 활을 그어보세요. |
+```json
+{ "domain": "pitch", "state": "SHARP_MAJOR", "action_id": "PT-00", "action": "CALL_SUPERVISOR",
+  "feedback": "원인 분석 중", "reward": -0.8, "q": -0.4, "meta": { "avg_cents": 112.0 } }
+```
+
+`meta`는 도메인 raw 신호이자 원인 분석 입력이다 — pitch `{avg_cents}`, rhythm `{drift_label, score}`,
+posture `{feature, risk_percent}`. `state`는 상위 필드로 GOOD 여부(`state == "GOOD"`) 판정에 쓴다.
+
+### 슈퍼바이저 → LLM 입력
+
+슈퍼바이저는 `action_id=-00`인 도메인을 막힌 도메인으로 잡고, 나머지 둘(동료) + 자신을 패킹한다:
+
+```json
+{
+  "measure_index": 12,
+  "blocked_domain": "pitch",
+  "blocked": { "domain": "pitch", "state": "SHARP_MAJOR", "meta": { "avg_cents": 112.0 } },
+  "peers": [
+    { "domain": "rhythm",  "state": "GOOD", "is_good": true, "meta": { "drift_label": "on_time", "score": 0.95 } },
+    { "domain": "posture", "state": "GOOD", "is_good": true, "meta": { "feature": "stable", "risk_percent": 5 } }
+  ],
+  "all_peers_good": true
+}
+```
+
+LLM 출력은 `{ "cause_domain": "...", "feedback": "..." }`. `all_peers_good=true`면 슈퍼바이저가
+`cause_domain`을 self(=`blocked_domain`)로 강제하고 LLM의 텍스트만 채택한다. 결과는 막힌 도메인 행에
+`cause_domain` + `feedback`으로 기록한다(`cause_source` 폐기 — DESIGN #21·#26, DB `feedback_events`).
