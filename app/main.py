@@ -1,12 +1,22 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.common import health
 from app.common.config import settings
 from app.common.exception.handlers import add_exception_handlers
+from app.common.media import sync_seed_media
 from app.domain.auth import router as auth_router
 from app.domain.song import router as song_router
 from app.domain.user import router as user_router
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    sync_seed_media()
+    yield
 
 DESCRIPTION = """\
 캡스톤 백엔드 API.
@@ -34,6 +44,13 @@ app = FastAPI(
     version="0.1.0",
     debug=settings.DEBUG,
     openapi_tags=TAGS_METADATA,
+    lifespan=lifespan,
+)
+
+app.mount(
+    "/media",
+    StaticFiles(directory=settings.MEDIA_ROOT, check_dir=False),
+    name="media",
 )
 
 app.add_middleware(

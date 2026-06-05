@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = "/api/v1"
     DEBUG: bool = False
 
+    MEDIA_ROOT: str = "media"
+
     CORS_ORIGINS: Annotated[list[str] | str, BeforeValidator(_parse_cors)] = []
     CORS_ORIGIN_REGEX: str | None = r"http://(localhost|127\.0\.0\.1):\d+"
 
