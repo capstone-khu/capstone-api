@@ -210,12 +210,24 @@ async def _stream(client, token: str, session_id: int):
 
 
 async def _complete(client, token: str, session_id: int) -> bool:
-    resp = await client.post(
-        f"{BASE}/sessions/{session_id}/complete",
-        headers={"Authorization": f"Bearer {token}"},
-    )
-    ok = resp.status_code == 200 and resp.json()["data"]["session_id"] == session_id
-    print(f"  /complete: status {resp.status_code}  {'OK' if ok else 'FAIL'}")
+    from app.common.media import media_path
+
+    with open(VIDEO, "rb") as vf, open(AUDIO, "rb") as af:
+        files = {
+            "audio": ("rec.mp3", af, "audio/mpeg"),
+            "video": ("rec.mp4", vf, "video/mp4"),
+        }
+        resp = await client.post(
+            f"{BASE}/sessions/{session_id}/complete",
+            headers={"Authorization": f"Bearer {token}"},
+            files=files,
+        )
+    data = resp.json().get("data", {})
+    rid = data.get("recording_id")
+    file_ok = rid is not None and media_path(f"/media/recordings/{rid}.mp4").exists()
+    ok = resp.status_code == 200 and data.get("session_id") == session_id and file_ok
+    print(f"  /complete: status {resp.status_code} recording_id={rid} "
+          f"file={'OK' if file_ok else 'X'}  {'OK' if ok else 'FAIL'}")
     return ok
 
 
