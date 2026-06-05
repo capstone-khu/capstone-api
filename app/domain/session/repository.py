@@ -13,6 +13,22 @@ class SessionRepository:
     async def get_by_id(self, session_id: int) -> Session | None:
         return await self.session.get(Session, session_id)
 
+    async def latest_completed(
+        self, user_id: int, song_id: int, exclude_session_id: int
+    ) -> Session | None:
+        result = await self.session.execute(
+            select(Session)
+            .where(
+                Session.user_id == user_id,
+                Session.song_id == song_id,
+                Session.status == "completed",
+                Session.id != exclude_session_id,
+            )
+            .order_by(Session.id.desc())
+            .limit(1)
+        )
+        return result.scalars().first()
+
     async def create(
         self,
         user_id: int,

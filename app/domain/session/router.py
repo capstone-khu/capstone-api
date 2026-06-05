@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends, File, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.exception.error_code import ErrorCode
@@ -10,6 +10,7 @@ from app.common.persistence import get_db
 from app.common.response import ApiResponse
 from app.domain.auth.dependencies import get_current_user
 from app.domain.session.schema import (
+    PreviousMarkingsResponse,
     SessionCompleteResponse,
     SessionCreateRequest,
     SessionCreateResponse,
@@ -72,11 +73,11 @@ async def create_session(
     "/{session_id}/complete",
     summary="연주 세션 종료",
     description=(
-        "연주를 정상 종료한다. 실시간 동안 메모리에 모은 피드백·Q 갱신을 "
-        "일괄적으로 영속하고 세션을 `completed` 로 닫는다. "
-        "본인 세션이 아니면 403, 없는 세션이면 404, "
-        "이미 종료된 세션이면 409로 막는다. "
-        "(녹음·녹화 파일 업로드와 협주 합성은 후속 단계에서 진행.)"
+        "연주를 정상 종료한다. 녹음(audio)·녹화(video)를 multipart 로 업로드해 "
+        "media 볼륨에 저장하고 녹음행을 만든 뒤, 실시간 동안 모은 피드백·Q 를 "
+        "일괄 영속하고 세션을 `completed` 로 닫는다. 협주(duet) 세션이면 합성 영상 "
+        "잡을 트리거하고 `duet_composite_id` 를 함께 반환한다. "
+        "본인 세션 아니면 403, 없으면 404, 이미 종료면 409."
     ),
     response_model=ApiResponse[SessionCompleteResponse, None],
     response_model_exclude_none=True,
@@ -87,10 +88,15 @@ async def create_session(
                 "success": True,
                 "status": 200,
                 "message": "요청에 성공했습니다.",
-                "data": {"session_id": 12},
+                "data": {
+                    "session_id": 12,
+                    "recording_id": 21,
+                    "duet_composite_id": 5,
+                },
             },
         ),
         **error_responses(
+            ErrorCode.INVALID_MAPPING_PARAMETER,
             ErrorCode.UNAUTHORIZED,
             ErrorCode.FORBIDDEN_SESSION,
             ErrorCode.SESSION_NOT_FOUND,
@@ -101,9 +107,64 @@ async def create_session(
 async def complete_session(
     session_id: int,
     current_user: Annotated[User, Depends(get_current_user)],
+    background: BackgroundTasks,
+    audio: Annotated[UploadFile, File()],
+    video: Annotated[UploadFile, File()],
     db: AsyncSession = Depends(get_db),
 ) -> ApiResponse[SessionCompleteResponse, None]:
-    data = await SessionService(db).complete_session(current_user.id, session_id)
+    data = await SessionService(db).complete_session(
+        current_user.id, session_id, audio, video, background
+    )
+    return ApiResponse.ok(SuccessCode.OK, data)
+
+
+@router.get(
+    "/{session_id}/previous-markings",
+    summary="직전 세션 마킹 조회",
+    description=(
+        "연주 화면 진입 시 직전 완료 세션의 마디별 마킹(외곽선)을 미리 조회한다. "
+        "같은 사용자·곡의 모드에 무관하게 직전 `completed` 세션 기준이다."
+        "(`state != GOOD`)만 반환한다. 직전 완료 세션이 없으면 빈 배열로 내려준다."
+    ),
+    response_model=ApiResponse[PreviousMarkingsResponse, None],
+    response_model_exclude_none=True,
+    responses={
+        **success_response(
+            200,
+            {
+                "success": True,
+                "status": 200,
+                "message": "요청에 성공했습니다.",
+                "data": {
+                    "previous_session_id": 10,
+                    "measures": [
+                        {
+                            "measure_index": 4,
+                            "markings": [
+                                {
+                                    "domain": "pitch",
+                                    "action_id": "PT-03",
+                                    "feedback": "음정을 내리세요",
+                                }
+                            ],
+                        }
+                    ],
+                },
+            },
+        ),
+        **error_responses(
+            ErrorCode.UNAUTHORIZED,
+            ErrorCode.FORBIDDEN_SESSION,
+            ErrorCode.SESSION_NOT_FOUND,
+        ),
+    },
+)
+async def previous_markings(
+    session_id: int,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[PreviousMarkingsResponse, None]:
+    data = await SessionService(db).previous_markings(current_user.id, session_id)
     return ApiResponse.ok(SuccessCode.OK, data)
 
 
