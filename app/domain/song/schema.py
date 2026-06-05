@@ -86,7 +86,6 @@ class ScoreResponse(BaseModel):
 class DuetPartner(BaseModel):
     recording_id: int
     user_name: str
-    song_title: str
     recorded_at: KSTDateTime
 
 
@@ -94,16 +93,17 @@ class DuetPartnersResponse(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
+                "song_title": "반짝 반짝 작은별",
                 "partners": [
                     {
                         "recording_id": 1,
                         "user_name": "손수민",
-                        "song_title": "반짝 반짝 작은별",
                         "recorded_at": "2026-06-01T10:00:00+09:00",
                     }
-                ]
+                ],
             }
         }
     )
 
+    song_title: str
     partners: list[DuetPartner]

@@ -117,14 +117,14 @@ async def get_score(
                 "status": 200,
                 "message": "요청에 성공했습니다.",
                 "data": {
+                    "song_title": "반짝 반짝 작은별",
                     "partners": [
                         {
                             "recording_id": 1,
                             "user_name": "손수민",
-                            "song_title": "반짝 반짝 작은별",
                             "recorded_at": "2026-06-01T10:00:00+09:00",
                         }
-                    ]
+                    ],
                 },
             },
         ),
