@@ -62,35 +62,35 @@ py -m pitch_agent.integration.realtime_bridge
 
 ### State
 
-| State | 설명 | cents 기준 |
-|-------|------|-----------|
-| GOOD | 정상 | ±30cents 이내 |
+| State        | 설명           | cents 기준      |
+| ------------ | -------------- | --------------- |
+| GOOD         | 정상           | ±30cents 이내   |
 | SHARP_SLIGHT | 음정 약간 높음 | +30 ~ +100cents |
-| SHARP_MAJOR | 음정 많이 높음 | +100cents 이상 |
-| FLAT_SLIGHT | 음정 약간 낮음 | -30 ~ -100cents |
-| FLAT_MAJOR | 음정 많이 낮음 | -100cents 이하 |
+| SHARP_MAJOR  | 음정 많이 높음 | +100cents 이상  |
+| FLAT_SLIGHT  | 음정 약간 낮음 | -30 ~ -100cents |
+| FLAT_MAJOR   | 음정 많이 낮음 | -100cents 이하  |
 
-State는 마디 내 유효 cents의 **평균값**으로 판단합니다.
+State는 마디 내 유효 cents의 평균값으로 판단합니다.
 
 ### Action
 
-| Action ID | 액션명 | 피드백 | 발동 조건 |
-|-----------|--------|--------|----------|
-| SA-01 | PITCH_UP | "음정을 올리세요" | FLAT_SLIGHT / FLAT_MAJOR |
-| SA-02 | PITCH_DOWN | "음정을 내리세요" | SHARP_SLIGHT / SHARP_MAJOR |
-| SA-03 | POSITIVE_PITCH | "잘 하고 있습니다. 계속 유지하세요" | GOOD |
-| SA-04 | CALL_SUPERVISOR | "슈퍼바이저에게 도움을 요청합니다" | SHARP / FLAT (Q값 기준 자연 선택) |
+| Action ID | 액션명          | 피드백                              | 발동 조건                         |
+| --------- | --------------- | ----------------------------------- | --------------------------------- |
+| SA-01     | PITCH_UP        | "음정을 올리세요"                   | FLAT_SLIGHT / FLAT_MAJOR          |
+| SA-02     | PITCH_DOWN      | "음정을 내리세요"                   | SHARP_SLIGHT / SHARP_MAJOR        |
+| SA-03     | POSITIVE_PITCH  | "잘 하고 있습니다. 계속 유지하세요" | GOOD                              |
+| SA-04     | CALL_SUPERVISOR | "슈퍼바이저에게 도움을 요청합니다"  | SHARP / FLAT (Q값 기준 자연 선택) |
 
 ### Reward
 
-| 조건 | 값 |
-|------|----|
-| GOOD 전환 | +1.0 |
+| 조건                              | 값   |
+| --------------------------------- | ---- |
+| GOOD 전환                         | +1.0 |
 | 심각 → 경미 개선 (MAJOR → SLIGHT) | +0.5 |
-| 변화 없음 | -0.3 |
-| 악화 (SLIGHT → MAJOR) | -0.8 |
-| CALL_SUPERVISOR 후 개선 | +0.8 |
-| CALL_SUPERVISOR 후 개선 없음 | -0.5 |
+| 변화 없음                         | -0.3 |
+| 악화 (SLIGHT → MAJOR)             | -0.8 |
+| CALL_SUPERVISOR 후 개선           | +0.8 |
+| CALL_SUPERVISOR 후 개선 없음      | -0.5 |
 
 ### Q-Learning
 
@@ -103,8 +103,8 @@ A  = PitchAction
 γ  = 0.9 (할인율)
 ```
 
-Q테이블은 **마디 단위**로 1회 업데이트됩니다.
-(50ms 프레임은 cents 측정만 수행)
+Q테이블은 마디 단위로 1회 업데이트됩니다.
+50ms 프레임은 cents 측정만 수행합니다.
 
 ### 개인화 Q테이블
 
@@ -131,70 +131,88 @@ Q테이블은 **마디 단위**로 1회 업데이트됩니다.
 반짝반짝 작은별 D장조, 0.5마디 단위 12마디 구성
 
 ```
-마디  1: D4 D4 A4 A4   (도도솔솔)
-마디  2: B4 B4 A4      (라라솔)
-마디  3: G4 G4 F#4 F#4 (파파미미)
-마디  4: E4 E4 D4      (레레도)
-마디  5: A4 A4 G4 G4   (솔솔파파)
-마디  6: F#4 F#4 E4    (미미레)
-마디  7: A4 A4 G4 G4   (솔솔파파)
-마디  8: F#4 F#4 E4    (미미레)
-마디  9: D4 D4 A4 A4   (도도솔솔)
-마디 10: B4 B4 A4      (라라솔)
-마디 11: G4 G4 F#4 F#4 (파파미미)
-마디 12: E4 E4 D4      (레레도)
+마디  1: D4 D4 A4 A4   (도도솔솔)   0.95 ~ 3.85s
+마디  2: B4 B4 A4      (라라솔)     3.85 ~ 6.05s
+마디  3: G4 G4 F#4 F#4 (파파미미)   6.05 ~ 8.95s
+마디  4: E4 E4 D4      (레레도)     8.95 ~ 11.25s
+마디  5: A4 A4 G4 G4   (솔솔파파)   11.25 ~ 13.95s
+마디  6: F#4 F#4 E4    (미미레)     13.95 ~ 16.60s
+마디  7: A4 A4 G4 G4   (솔솔파파)   16.60 ~ 19.10s
+마디  8: F#4 F#4 E4    (미미레)     19.10 ~ 21.55s
+마디  9: D4 D4 A4 A4   (도도솔솔)   21.55 ~ 24.10s
+마디 10: B4 B4 A4      (라라솔)     24.10 ~ 26.20s
+마디 11: G4 G4 F#4 F#4 (파파미미)   26.20 ~ 29.10s
+마디 12: E4 E4 D4      (레레도)     29.10 ~ 33.00s
 ```
 
 ---
 
-## 에이전트 출력 JSON 양식
+## 슈퍼바이저 연동
 
-### 마디 피드백
+### 마디마다 상시 전송
+
+마디가 끝날 때마다 슈퍼바이저에게 데이터를 전송합니다.
+음표별로 50ms 프레임을 수집해 평균을 계산합니다.
 
 ```json
 {
-    "agent": "pitch",
-    "measure": 4,
-    "state": "FLAT_MAJOR",
-    "action_id": "SA-01",
-    "action": "PITCH_UP",
-    "feedback": "음정을 올리세요",
-    "reward": -0.3,
-    "q": -0.027,
-    "meta": {}
+  "agent": "pitch",
+  "measure": 1,
+  "timestamp": { "start": 0.95, "end": 3.85 },
+  "state": "FLAT_SLIGHT",
+  "action_id": "SA-01",
+  "action": "PITCH_UP",
+  "feedback": "음정을 올리세요",
+  "reward": -0.3,
+  "q": -0.027,
+  "call_supervisor": false,
+  "notes": [
+    {
+      "note": "D4",
+      "target_hz": 293.66,
+      "avg_actual_hz": 285.1,
+      "avg_cents": -51.2,
+      "frame_count": 19
+    },
+    {
+      "note": "D4",
+      "target_hz": 293.66,
+      "avg_actual_hz": 286.3,
+      "avg_cents": -47.1,
+      "frame_count": 10
+    },
+    {
+      "note": "A4",
+      "target_hz": 440.0,
+      "avg_actual_hz": 432.1,
+      "avg_cents": -31.5,
+      "frame_count": 15
+    },
+    {
+      "note": "A4",
+      "target_hz": 440.0,
+      "avg_actual_hz": 433.2,
+      "avg_cents": -27.8,
+      "frame_count": 12
+    }
+  ]
 }
 ```
 
 ### CALL_SUPERVISOR 발동 시
 
-```json
-{
-    "agent": "pitch",
-    "measure": 4,
-    "state": "FLAT_MAJOR",
-    "action_id": "SA-04",
-    "action": "CALL_SUPERVISOR",
-    "feedback": "슈퍼바이저에게 도움을 요청합니다",
-    "reward": -0.8,
-    "q": -0.064,
-    "meta": {}
-}
-```
-
-### 세션 종료 요약
+Q-Learning을 통해 CALL_SUPERVISOR Action이 선택되면 `call_supervisor: true`로 전송됩니다.
+슈퍼바이저는 이 플래그를 감지해 다른 에이전트(박자, 자세) 데이터와 종합하여 LLM 기반 심층 피드백을 생성합니다.
 
 ```json
 {
-    "user_id": "user_001",
-    "session_type": "normal",
-    "results": {
-        "1": "성공",
-        "2": "성공",
-        "3": "실패",
-        "4": "측정 불가"
-    }
+    ...
+    "call_supervisor": true,
+    ...
 }
 ```
+
+실제 슈퍼바이저 연동 시 `_send_to_supervisor()` 메서드에 API 호출 코드를 추가하면 됩니다.
 
 ---
 

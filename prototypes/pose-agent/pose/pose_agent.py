@@ -17,20 +17,30 @@ class PoseAgent:
         analyzer=None,
         output_path="pose_output.json",
         supervisor=None,
-        feedback_interval_seconds=5.0,
     ):
         self.source = source
         self.fps = self._get_capture_fps()
-        self.feedback_interval_seconds = feedback_interval_seconds
-        self.next_feedback_timestamp = feedback_interval_seconds
         self.frame_index = 0
+
+        # 피드백 간격에 맞춰 시퀀스 버퍼 업데이트
+        self.segments = [
+            {"start": 0.95, "end": 3.85},
+            {"start": 3.85, "end": 6.05},
+            {"start": 6.05, "end": 8.95},
+            {"start": 8.95, "end": 11.25},
+            {"start": 11.25, "end": 13.95},
+            {"start": 13.95, "end": 16.60},
+            {"start": 16.60, "end": 19.10},
+            {"start": 19.10, "end": 21.55},
+            {"start": 21.55, "end": 24.10},
+            {"start": 24.10, "end": 26.20},
+            {"start": 26.20, "end": 29.10},
+            {"start": 29.10, "end": 33.00},
+        ]
+        self.current_segment_index = 0
 
         self.pose_extractor = pose_extractor or PoseExtractor(self.source)
         self.feature_extractor = feature_extractor or FeatureExtractor(
-            sequence_length=max(
-                1,
-                int(round(self.fps * feedback_interval_seconds)),
-            ),
             stride=1,
         )
         self.analyzer = analyzer or PoseFeedbackAnalyzer()
@@ -65,13 +75,29 @@ class PoseAgent:
             return None
 
         features = self.pose_to_features(landmarks, print_debug=print_debug)
-        sequence = self.feature_extractor.update_buffer(features)
+        timestamp = self.current_video_timestamp()
 
-        if sequence is None:
+        # 모든 구간 처리 완료
+        if self.current_segment_index >= len(self.segments):
             return self._empty_step_result(features)
 
-        timestamp = self.current_video_timestamp()
-        if timestamp < self.next_feedback_timestamp:
+        segment = self.segments[self.current_segment_index]
+
+        # 아직 현재 구간 시작 전
+        if timestamp < segment["start"]:
+            return self._empty_step_result(features)
+        
+        # segment 안에 들어왔을 때만 feature를 버퍼에 적재
+        self.feature_extractor.update_buffer(features)
+
+        # 현재 구간 진행 중
+        if timestamp < segment["end"]:
+            return self._empty_step_result(features)
+
+        # 현재 구간 데이터 가져오기
+        sequence = self.feature_extractor.get_sequence()
+
+        if sequence is None or len(sequence) < 2:
             return self._empty_step_result(features)
 
         result = self.analyzer.analyze(sequence)
@@ -121,8 +147,10 @@ class PoseAgent:
         self.prev_state = current_state
         self.prev_action = action
 
-        while self.next_feedback_timestamp <= timestamp:
-            self.next_feedback_timestamp += self.feedback_interval_seconds
+        # 다음 구간으로 이동
+        self.current_segment_index += 1
+        # 다음 구간 분석을 위해 버퍼 초기화
+        self.feature_extractor.reset_sequence()
 
         self.write_result(agent_result)
 
@@ -192,7 +220,7 @@ class PoseAgent:
             "feedback": action_result["feedback"],
             "reward": reward_info["reward"] if reward_info else None,
             "q": q_value,
-            "meta": self._build_supervisor_meta(result, feedback),
+            "meta": self._build_supervisor_meta(feedback),
         }
 
         return {
@@ -209,9 +237,7 @@ class PoseAgent:
             },
         }
 
-    def _build_supervisor_meta(self, result, feedback):
-        if self.supervisor.is_stable_result(result):
-            return {}
+    def _build_supervisor_meta(self, feedback):
 
         top_issues = feedback.get("top_issues", [])
         if not top_issues:
@@ -221,9 +247,10 @@ class PoseAgent:
             top_issues,
             key=lambda item: item.get("risk_percent", 0.0),
         )
+        
         return {
             "feature": top_issue.get("feature"),
-            "risk_percent": top_issue.get("risk_percent"),
+            # "risk_percent": top_issue.get("risk_percent"),
             "coaching": top_issue.get("coaching"),
         }
 

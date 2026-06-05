@@ -15,6 +15,12 @@ class ErrorCode(Enum):
     # ===== SONG =====
     SONG_NOT_FOUND = (404, "SON_404_001", "존재하지 않는 곡입니다.")
 
+    # ===== SESSION =====
+    INVALID_DUET_PARTNER = (400, "SES_400_001", "협주 상대 녹음이 올바르지 않습니다.")
+
+    # ===== RECORDING =====
+    RECORDING_NOT_FOUND = (404, "REC_404_001", "존재하지 않는 녹음입니다.")
+
     def __init__(self, status: int, code: str, message: str) -> None:
         self.status = status
         self.code = code

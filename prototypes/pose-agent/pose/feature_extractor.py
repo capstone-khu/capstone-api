@@ -129,14 +129,23 @@ class FeatureExtractor:
         if self.frame_counter % self.stride != 0:
             return None
 
-        if self.frame_counter % self.stride == 0:
-            # sequence buffer에 feature 벡터 추가
-            # 버퍼가 sequence_length개 채워지면 (sequence_length, feature_dim) 형태의 numpy array 반환, 그렇지 않으면 None 반환
-            vector = self.to_vector(features)
-            self.sequence_buffer.append(vector)
+        # sequence buffer에 feature 벡터 추가
+        vector = self.to_vector(features)
+        self.sequence_buffer.append(vector)
 
-        if len(self.sequence_buffer) < self.sequence_buffer.maxlen:
-            return None  # 버퍼가 아직 채워지지 않음
-        
+        # 구간 종료 시점에 Agent가 직접 sequence를 가져갈 것이므로
+        # 여기서는 항상 버퍼만 유지
         # (sequence_length, feature_dim) = (30, 6) 형태의 배열 반환 
         return np.array(self.sequence_buffer, dtype=np.float32)  
+    
+    # 현재 구간의 sequence 반환
+    def get_sequence(self):
+        if len(self.sequence_buffer) == 0:
+            return None
+
+        return np.array(self.sequence_buffer, dtype=np.float32)
+    
+    # 시퀀스 버퍼 초기화 (새 구간 시작 시 호출)
+    def reset_sequence(self):
+        self.sequence_buffer.clear()
+        self.frame_counter = 0
