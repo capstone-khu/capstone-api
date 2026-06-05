@@ -10,6 +10,9 @@ wheels/
 .ruff_cache/
 .pytest_cache/
 
+# Served media (synced from seeds at runtime)
+media/
+
 # Virtual environments
 .venv
 
