@@ -50,6 +50,15 @@ class LiveSession:
                 self.outputs.append(output)
         return produced
 
+    def resolve_output(
+        self, measure_index: int, domain: Domain, cause_domain: str, feedback: str
+    ) -> None:
+        for output in self.outputs:
+            if output.measure_index == measure_index and output.domain == domain:
+                output.cause_domain = cause_domain
+                output.feedback = feedback
+                return
+
     def close(self) -> None:
         closer = getattr(self.aggregators.get(Domain.POSTURE), "close", None)
         if callable(closer):
