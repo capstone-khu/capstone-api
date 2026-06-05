@@ -3,6 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.domain.agent.pitch.measurer import PitchMeasurer
 from app.domain.agent.pitch.policy import PitchPolicy
 from app.domain.agent.policy import Policy
+from app.domain.agent.posture.measurer import PoseMeasurer, PostureSpec
+from app.domain.agent.posture.policy import PosturePolicy
 from app.domain.agent.qlearning import QLearningEngine
 from app.domain.agent.repository import AgentRepository
 from app.domain.agent.rhythm.measurer import RhythmMeasurer, RhythmSpec
@@ -46,11 +48,13 @@ class AgentBatchService:
 
     def _for_domain(
         self, domain: Domain
-    ) -> tuple[PitchMeasurer | RhythmMeasurer, Policy]:
+    ) -> tuple[PitchMeasurer | RhythmMeasurer | PoseMeasurer, Policy]:
         if domain == Domain.PITCH:
             return PitchMeasurer(), PitchPolicy()
         if domain == Domain.RHYTHM:
             return RhythmMeasurer(), RhythmPolicy()
+        if domain == Domain.POSTURE:
+            return PoseMeasurer(), PosturePolicy()
         raise ValueError(f"아직 지원하지 않는 도메인입니다: {domain}")
 
     async def _load_score(self, domain: Domain, song_id: int):
@@ -58,6 +62,8 @@ class AgentBatchService:
             return load_timed_score(song_id)
         if domain == Domain.RHYTHM:
             return await self._load_rhythm_spec(song_id)
+        if domain == Domain.POSTURE:
+            return PostureSpec(windows=load_timed_score(song_id).measure_windows())
         raise ValueError(f"아직 지원하지 않는 도메인입니다: {domain}")
 
     async def _load_rhythm_spec(self, song_id: int) -> RhythmSpec:
