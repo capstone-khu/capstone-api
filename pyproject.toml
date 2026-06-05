@@ -18,6 +18,12 @@ dependencies = [
 dev = [
     "ruff>=0.15.15",
 ]
+audio = [
+    "swift-f0>=0.1.2",
+    "librosa>=0.10.0",
+    "noisereduce>=3.0.0",
+    "numpy>=1.26.0",
+]
 
 [tool.ruff]
 line-length = 88
