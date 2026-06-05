@@ -8,3 +8,6 @@ __pycache__/
 .env
 .idea/
 .vscode/
+
+# Runtime media artifacts (regenerated from seeds at boot)
+media/

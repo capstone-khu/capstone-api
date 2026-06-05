@@ -23,6 +23,8 @@ WORKDIR /app
 
 COPY --from=builder --chown=appuser:appuser /app /app
 
+RUN mkdir -p /app/media/recordings && chown -R appuser:appuser /app/media
+
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1
 
