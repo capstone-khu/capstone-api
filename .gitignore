@@ -11,7 +11,7 @@ wheels/
 .pytest_cache/
 
 # Served media (synced from seeds at runtime)
-media/
+/media/
 
 # Virtual environments
 .venv
