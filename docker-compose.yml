@@ -22,6 +22,8 @@ services:
     env_file: .env
     environment:
       MYSQL_HOST: db
+    volumes:
+      - media_data:/app/media
     expose:
       - "8000"
     depends_on:
@@ -49,5 +51,6 @@ services:
 
 volumes:
   mysql_data:
+  media_data:
   caddy_data:
   caddy_config:
