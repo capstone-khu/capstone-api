@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, model_validator
@@ -42,6 +43,41 @@ class SessionCreateResponse(BaseModel):
 
 
 class SessionCompleteResponse(BaseModel):
-    model_config = ConfigDict(json_schema_extra={"example": {"session_id": 12}})
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "session_id": 12,
+                "recording_id": 21,
+                "duet_composite_id": 5,
+            }
+        }
+    )
 
     session_id: int
+    recording_id: int
+    duet_composite_id: int | None = None
+
+
+class Marking(BaseModel):
+    domain: str
+    action_id: str
+    feedback: str
+
+
+class MeasureMarkings(BaseModel):
+    measure_index: int
+    markings: list[Marking]
+
+
+class PreviousMarkingsResponse(BaseModel):
+    previous_session_id: int | None = None
+    measures: list[MeasureMarkings]
+
+
+class DuetVideoResponse(BaseModel):
+    duet_composite_id: int
+    song_title: str
+    partner_name: str
+    status: str
+    composite_video_url: str | None = None
+    created_at: datetime

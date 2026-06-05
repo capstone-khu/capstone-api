@@ -9,6 +9,7 @@ from app.common.config import settings
 from app.common.exception.handlers import add_exception_handlers
 from app.common.media import sync_seed_media
 from app.domain.auth import router as auth_router
+from app.domain.session import duet_router as session_duet_router
 from app.domain.session import router as session_router
 from app.domain.session import ws as session_ws
 from app.domain.song import router as song_router
@@ -71,4 +72,5 @@ app.include_router(auth_router.router)
 app.include_router(song_router.router)
 app.include_router(session_router.router)
 app.include_router(session_ws.router)
+app.include_router(session_duet_router.router)
 app.include_router(user_router.router)

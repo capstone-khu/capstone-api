@@ -43,3 +43,20 @@ class Recording(BaseEntity):
     available_for_duet: Mapped[bool] = mapped_column(
         Boolean, server_default=text("1")
     )
+
+
+class DuetVideo(BaseEntity):
+    __tablename__ = "duet_videos"
+
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"))
+    session_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("sessions.id"))
+    song_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("songs.id"))
+    partner_recording_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("recordings.id")
+    )
+    status: Mapped[str] = mapped_column(
+        Enum("pending", "processing", "ready", "failed", name="duet_status")
+    )
+    composite_video_url: Mapped[str | None] = mapped_column(
+        String(500), nullable=True
+    )
