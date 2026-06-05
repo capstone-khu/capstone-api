@@ -333,15 +333,12 @@ class Q_PoseRewardUpdater:
             "GOOD": 0,
             "STABLE": 0,
             "안정": 0,
-            "?덉젙": 0,
             "warning": 1,
             "WARNING": 1,
             "주의": 1,
-            "二쇱쓽": 1,
             "risky": 2,
             "RISKY": 2,
             "위험": 2,
-            "?꾪뿕": 2,
         }
         return ranks.get(posture_case, 1)
 

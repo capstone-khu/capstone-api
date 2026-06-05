@@ -1,0 +1,15 @@
+# 대용량 테스트 자산 (에이전트 통합엔 우리 세션 녹음을 쓰므로 불필요)
+*/audio/
+*/asset/
+*.wav
+*.mp3
+*.m4a
+*.mp4
+*.png
+
+# 런타임·캐시 산출물
+**/__pycache__/
+*.py[cod]
+*/data/q_tables/
+*/data/session_history/
+*/integration/raw_pitch_data.json
