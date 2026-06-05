@@ -11,19 +11,23 @@ ENV UV_COMPILE_BYTECODE=1 \
 WORKDIR /app
 
 COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-install-project --no-dev
+RUN uv sync --frozen --no-install-project --no-dev --group audio --group vision
 
 COPY . .
-RUN uv sync --frozen --no-dev
+RUN uv sync --frozen --no-dev --group audio --group vision
 
 FROM python:3.12-slim AS runtime
 
 RUN useradd -m -u 1000 appuser
 WORKDIR /app
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libgl1 libglib2.0-0 libgles2 ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY --from=builder --chown=appuser:appuser /app /app
 
-RUN mkdir -p /app/media/recordings && chown -R appuser:appuser /app/media
+RUN mkdir -p /app/media/recordings /app/media/duet && chown -R appuser:appuser /app/media
 
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1
@@ -31,4 +35,4 @@ ENV PATH="/app/.venv/bin:$PATH" \
 USER appuser
 EXPOSE 8000
 
-CMD ["sh", "-c", "alembic upgrade head && fastapi run app/main.py --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "alembic upgrade head && fastapi run app/main.py --host 0.0.0.0 --port 8000 --workers 1"]
