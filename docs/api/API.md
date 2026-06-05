@@ -879,11 +879,10 @@
 | items[].feedback | string | Y | 피드백 문구(위임 시 원인 설명, 분석 중이면 "원인 분석 중") | "음정을 내리세요" |
 | items[].cause | object | N | 위임(`-00`) 시 원인 분석 정보. 없으면 생략 | null |
 | items[].cause.pending | boolean | N | 원인 분석 중(LLM 대기). true면 `feedback`="원인 분석 중", `domain` 없음 | true |
-| items[].cause.domain | string | N | 지목된 원인 영역(pitch/rhythm/posture). pending 중엔 없음 | "rhythm" |
-| items[].cause.source | string | N | 원인 산출 출처(`llm` / `heuristic`) | "llm" |
+| items[].cause.domain | string | N | 지목된 원인 영역(pitch/rhythm/posture). 막힌 도메인 자신(self)일 수 있음. pending 중엔 없음 | "rhythm" |
 
 > GOOD 도메인은 `action_id=-01`(POSITIVE) item으로 실시간 격려를 보낸다(WS 전달 + `feedback_events` 에도 기록 — DESIGN #25).
-> 위임(`-00`) 마디에선 막힌 도메인 item을 **삭제하지 않고** 그 슬롯에 원인 설명을 담는다(DESIGN #21). 비-GOOD 동료가 있으면 먼저 `cause.pending=true`(`feedback`="원인 분석 중")로 보낸 뒤 LLM 결과가 오면 `feedback_update` 메시지로 그 item을 교체한다(Branch A). 동료가 모두 GOOD이면 룰베이스 휴리스틱으로 원인을 즉시 채운다(`cause.source="heuristic"`, Branch B). 나머지 도메인은 각자 item(GOOD→POSITIVE, 비-GOOD→교정)을 그대로 보낸다.
+> 위임(`-00`) 마디에선 막힌 도메인 item을 **삭제하지 않고** 그 슬롯에 원인 설명을 담는다(DESIGN #21). 위임은 **모두 LLM 원인 분석**을 거친다(단일 경로): 먼저 `cause.pending=true`(`feedback`="원인 분석 중")로 보낸 뒤 LLM 결과가 오면 `feedback_update` 메시지로 그 item을 교체한다. 비-GOOD 동료가 있으면 그 동료 또는 막힌 도메인 자신이 원인으로 지목될 수 있고, **동료가 모두 GOOD이면 외부 원인이 없으므로 `cause.domain`은 막힌 도메인 자신(self)으로 고정**된다(LLM은 설명 텍스트만 생성). 나머지 도메인은 각자 item(GOOD→POSITIVE, 비-GOOD→교정)을 그대로 보낸다.
 > `feedback_update`(server→client) 메시지: `{ "type": "feedback_update", "measure_index": <n>, "item": { ...교체할 도메인 item... } }`. 같은 `measure_index`·`item.domain`의 기존 item을 교체한다(비동기 LLM 원인 분석 결과 도착 시).
 
 **9. Success Response Example (2xx)**
@@ -907,7 +906,7 @@
 {
   "type": "feedback_update",
   "measure_index": 12,
-  "item": { "domain": "pitch", "action_id": "PT-00", "action": "CALL_SUPERVISOR", "feedback": "박자가 밀리면서 음정도 같이 내려간 것 같아요.", "cause": { "pending": false, "domain": "rhythm", "source": "llm" } }
+  "item": { "domain": "pitch", "action_id": "PT-00", "action": "CALL_SUPERVISOR", "feedback": "박자가 밀리면서 음정도 같이 내려간 것 같아요.", "cause": { "pending": false, "domain": "rhythm" } }
 }
 ```
 
@@ -924,16 +923,12 @@
 }
 ```
 
-위임 + 룰베이스 휴리스틱 (음정이 막혔고 동료가 모두 GOOD → 즉시 원인 지목):
+위임 + 동료 전원 GOOD → 막힌 도메인 자신이 원인(self) (외부 원인 없음). 음정 슬롯은 위 첫 예시처럼 `cause.pending=true`를 먼저 보낸 뒤, LLM 결과가 오면 self 원인으로 교체:
 ```json
 {
-  "type": "feedback",
+  "type": "feedback_update",
   "measure_index": 15,
-  "items": [
-    { "domain": "pitch", "action_id": "PT-00", "action": "CALL_SUPERVISOR", "feedback": "왼손 자세를 바로잡으면 음정이 올라와요.", "cause": { "pending": false, "domain": "posture", "source": "heuristic" } },
-    { "domain": "rhythm", "action_id": "RH-01", "action": "POSITIVE_RHYTHM", "feedback": "잘 하고 있습니다. 계속 유지하세요" },
-    { "domain": "posture", "action_id": "PS-01", "action": "POSITIVE_POSTURE", "feedback": "잘 하고 있습니다. 계속 유지하세요" }
-  ]
+  "item": { "domain": "pitch", "action_id": "PT-00", "action": "CALL_SUPERVISOR", "feedback": "자세·박자는 안정적인데 음정만 흔들려요. 첫 음 짚는 손가락 위치를 점검해보세요.", "cause": { "pending": false, "domain": "pitch" } }
 }
 ```
 
