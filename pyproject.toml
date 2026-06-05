@@ -24,6 +24,11 @@ audio = [
     "noisereduce>=3.0.0",
     "numpy>=1.26.0",
 ]
+vision = [
+    "mediapipe>=0.10",
+    "scikit-learn>=1.3",
+    "joblib>=1.3",
+]
 
 [tool.ruff]
 line-length = 88

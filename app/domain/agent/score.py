@@ -35,6 +35,24 @@ class Score:
     def measures(self) -> list[int]:
         return sorted({n["measure"] for n in self.notes if n.get("measure")})
 
+    def measure_windows(self) -> list[tuple[int, float, float]]:
+        by_measure: dict[int, list[dict]] = {}
+        for note in self.notes:
+            m = note.get("measure")
+            if m is not None:
+                by_measure.setdefault(m, []).append(note)
+
+        measures = sorted(by_measure)
+        windows: list[tuple[int, float, float]] = []
+        for i, m in enumerate(measures):
+            start = min(n["start"] for n in by_measure[m])
+            if i + 1 < len(measures):
+                end = min(n["start"] for n in by_measure[measures[i + 1]])
+            else:
+                end = max(n["end"] for n in by_measure[m])
+            windows.append((m, round(start, 3), round(end, 3)))
+        return windows
+
     @staticmethod
     def _normalize_octave(actual_hz: float, target_hz: float) -> float:
         normalized = actual_hz
