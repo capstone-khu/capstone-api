@@ -305,7 +305,7 @@
 ## 9. feedback_events (L4)
 
 **1. 테이블 설명**
-마디별 에이전트 출력 기록(append-only). **(measure_index, domain)당 최대 1행**(마디당 보통 3행). **마디마다 모든 도메인 출력을 기록**한다(GOOD/POSITIVE 포함) — 종합 피드백이 잘한 곳까지 봐야 하기 때문. 결과 마킹·이력 stats는 `state != 'GOOD'` 로 걸러 **문제만** 센다(저장은 전부, 표시는 문제 위주). 위임(`-00`)은 새 행을 만들지 않고 막힌 도메인 자신의 행에 원인 분석 결과를 담는다 — `cause_domain`(지목된 원인 영역) + `feedback`(원인 설명) + `cause_source`(`llm`/`heuristic`). 세션별 집중 반복 레슨 마디는 별도 테이블 없이 이 표에서 (measure_index 별) **세 도메인이 모두 `state != 'GOOD'`** 인 마디를 조회해 도출한다. 결과·AI분석·이력 통계의 단일 소스다. 추가만 하고 수정하지 않으므로 `updated_at` 이 없다.
+마디별 에이전트 출력 기록(append-only). **(measure_index, domain)당 최대 1행**(마디당 보통 3행). **마디마다 모든 도메인 출력을 기록**한다(GOOD/POSITIVE 포함) — 종합 피드백이 잘한 곳까지 봐야 하기 때문. 결과 마킹·이력 stats는 `state != 'GOOD'` 로 걸러 **문제만** 센다(저장은 전부, 표시는 문제 위주). 위임(`-00`)은 새 행을 만들지 않고 막힌 도메인 자신의 행에 LLM 원인 분석 결과를 담는다 — `cause_domain`(지목된 원인 영역, 동료가 모두 GOOD이면 막힌 도메인 자신=self) + `feedback`(원인 설명). 위임 원인 분석은 LLM 단일 경로다. 세션별 집중 반복 레슨 마디는 별도 테이블 없이 이 표에서 (measure_index 별) **세 도메인이 모두 `state != 'GOOD'`** 인 마디를 조회해 도출한다. 결과·AI분석·이력 통계의 단일 소스다. 추가만 하고 수정하지 않으므로 `updated_at` 이 없다.
 
 **2. 테이블 이름**
 `feedback_events`
@@ -323,8 +323,7 @@
 | - | feedback | TEXT | NOT NULL | 피드백 문구 | "음정을 내리세요" |
 | - | reward | FLOAT | NULL | 직전 마디 대비 보상(첫 마디 null) | 1.0 |
 | - | q | FLOAT | NOT NULL | 갱신 후 Q값 | 0.7 |
-| - | cause_domain | VARCHAR(10) | NULL | 위임(`-00`) 시 지목된 원인 도메인(위임 아니면 NULL) | "rhythm" |
-| - | cause_source | ENUM('llm','heuristic') | NULL | 위임(`-00`) 원인 산출 출처(위임 아니면 NULL) | "llm" |
+| - | cause_domain | VARCHAR(10) | NULL | 위임(`-00`) 시 지목된 원인 도메인(위임 아니면 NULL, 막힌 도메인 자신=self 가능) | "rhythm" |
 | - | meta | JSON | NULL | 도메인 고유 정보(pitch=avg_cents·state, rhythm=drift_label·score, posture=feature·risk_percent) | {} |
 | - | created_at | DATETIME | NOT NULL | 생성 시각 | "2026-06-02 09:31:00" |
 
@@ -344,7 +343,6 @@
   "reward": 1.0,
   "q": 0.7,
   "cause_domain": null,
-  "cause_source": null,
   "meta": { "avg_cents": 112.0 },
   "created_at": "2026-06-02 09:31:00"
 }
