@@ -63,13 +63,13 @@ class SongService:
 
         partners = await self.songs.list_duet_partners(song_id, exclude_user_id)
         return DuetPartnersResponse(
+            song_title=song.title,
             partners=[
                 DuetPartner(
                     recording_id=recording.id,
                     user_name=user_name,
-                    song_title=song.title,
                     recorded_at=recording.created_at,
                 )
                 for recording, user_name in partners
-            ]
+            ],
         )

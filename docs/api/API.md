@@ -656,10 +656,10 @@
 **8. Response Body**
 | Name | Type | Required | Description | Example |
 |---|---|---|---|---|
+| song_title | string | Y | 곡명(헤더 표시용) | "반짝 반짝 작은별" |
 | partners | array | Y | 협주 상대 목록(없으면 빈 배열) | [] |
 | partners[].recording_id | number | Y | 협주에 사용할 녹음 ID | 8 |
 | partners[].user_name | string | Y | 연주자 이름 | "이준호" |
-| partners[].song_title | string | Y | 곡명 | "반짝 반짝 작은별" |
 | partners[].recorded_at | string(datetime) | Y | 녹음 시각 | "2026-05-30T12:00:00+09:00" |
 
 **9. Success Response Example (2xx)**
@@ -670,8 +670,9 @@
   "status": 200,
   "message": "요청에 성공했습니다.",
   "data": {
+    "song_title": "반짝 반짝 작은별",
     "partners": [
-      { "recording_id": 8, "user_name": "이준호", "song_title": "반짝 반짝 작은별", "recorded_at": "2026-05-30T12:00:00+09:00" }
+      { "recording_id": 8, "user_name": "이준호", "recorded_at": "2026-05-30T12:00:00+09:00" }
     ]
   }
 }
