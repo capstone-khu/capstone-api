@@ -9,6 +9,7 @@ from sqlalchemy import func
 from app.common.persistence import AsyncSessionLocal
 from app.domain.agent.realtime import store
 from app.domain.agent.realtime.runtime import LiveSession
+from app.domain.agent.realtime.supervisor import resolve_cause
 from app.domain.agent.schema import AgentOutput, Domain
 from app.domain.auth.security import decode_token
 from app.domain.session.model import Session
@@ -55,13 +56,17 @@ async def stream(websocket: WebSocket, session_id: int) -> None:
 
     store.register(live)
     executor = ThreadPoolExecutor(max_workers=1)
+    send_lock = asyncio.Lock()
+    tasks: set[asyncio.Task] = set()
     try:
-        await _loop(websocket, live, executor)
+        await _loop(websocket, live, executor, send_lock, tasks)
     except WebSocketDisconnect:
         pass
     except Exception:
         await websocket.close(code=CLOSE_INTERNAL)
     finally:
+        for task in tasks:
+            task.cancel()
         executor.shutdown(wait=False)
         await _cleanup(session_id)
 
@@ -81,7 +86,11 @@ def _authenticate(websocket: WebSocket) -> int | None:
 
 
 async def _loop(
-    websocket: WebSocket, live: LiveSession, executor: ThreadPoolExecutor
+    websocket: WebSocket,
+    live: LiveSession,
+    executor: ThreadPoolExecutor,
+    send_lock: asyncio.Lock,
+    tasks: set[asyncio.Task],
 ) -> None:
     loop = asyncio.get_event_loop()
     while True:
@@ -105,13 +114,65 @@ async def _loop(
             outputs = await loop.run_in_executor(
                 executor, live.score_measure, measure_index
             )
+            async with send_lock:
+                await websocket.send_json(
+                    {
+                        "type": "feedback",
+                        "measure_index": measure_index,
+                        "items": _items(outputs),
+                    }
+                )
+            _spawn_resolvers(websocket, live, outputs, send_lock, tasks)
+
+
+def _spawn_resolvers(
+    websocket: WebSocket,
+    live: LiveSession,
+    outputs: list[AgentOutput],
+    send_lock: asyncio.Lock,
+    tasks: set[asyncio.Task],
+) -> None:
+    delegated = [o for o in outputs if o.action_id.endswith(_DELEGATION)]
+    if not delegated:
+        return
+    states = {o.domain: o.state for o in outputs}
+    metas = {o.domain: (o.meta or {}) for o in outputs}
+    for output in delegated:
+        task = asyncio.create_task(
+            _resolve(websocket, live, output, states, metas, send_lock)
+        )
+        tasks.add(task)
+        task.add_done_callback(tasks.discard)
+
+
+async def _resolve(
+    websocket: WebSocket,
+    live: LiveSession,
+    output: AgentOutput,
+    states: dict[Domain, str],
+    metas: dict[Domain, dict],
+    send_lock: asyncio.Lock,
+) -> None:
+    cause, feedback = await resolve_cause(output.domain, states, metas)
+    live.resolve_output(output.measure_index, output.domain, cause, feedback)
+    item = {
+        "domain": output.domain.value,
+        "action_id": output.action_id,
+        "action": output.action,
+        "feedback": feedback,
+        "cause": {"pending": False, "domain": cause},
+    }
+    try:
+        async with send_lock:
             await websocket.send_json(
                 {
-                    "type": "feedback",
-                    "measure_index": measure_index,
-                    "items": _items(outputs),
+                    "type": "feedback_update",
+                    "measure_index": output.measure_index,
+                    "item": item,
                 }
             )
+    except Exception:
+        pass
 
 
 def _items(outputs: list[AgentOutput]) -> list[dict]:
