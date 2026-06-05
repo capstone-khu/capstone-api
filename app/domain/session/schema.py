@@ -39,3 +39,9 @@ class SessionCreateResponse(BaseModel):
     song_title: str
     partner_name: str | None = None
     audio_url: str | None = None
+
+
+class SessionCompleteResponse(BaseModel):
+    model_config = ConfigDict(json_schema_extra={"example": {"session_id": 12}})
+
+    session_id: int

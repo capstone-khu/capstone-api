@@ -12,19 +12,27 @@ _policy = RhythmPolicy()
 class BeatDetector(Protocol):
     def detect(self, audio_path: str) -> list[float]: ...
 
+    def detect_array(self, samples, sr: int) -> list[float]: ...
+
 
 class LibrosaBeatDetector:
     """librosa.beat.beat_track 기반 비트 검출(검출 시각 초 단위).
 
     프로토타입은 madmom 을 썼지만 py3.12+numpy2 에서 설치가 안 돼(환경 통합)
     연동에선 librosa 로 대체. 같은 인터페이스라 호환 환경이 생기면 이 자리만 교체한다.
+    detect 는 파일(배치), detect_array 는 메모리 샘플(실시간) 입력.
     """
 
     def detect(self, audio_path: str) -> list[float]:
         import librosa
 
         y, sr = librosa.load(audio_path, sr=None, mono=True)
-        _, beats = librosa.beat.beat_track(y=y, sr=sr, units="time")
+        return self.detect_array(y, sr)
+
+    def detect_array(self, samples, sr: int) -> list[float]:
+        import librosa
+
+        _, beats = librosa.beat.beat_track(y=samples, sr=sr, units="time")
         return [float(b) for b in beats]
 
 
@@ -86,6 +94,30 @@ class RhythmMeasurer:
                 halves.append(self._eval_half(grid_seg, beats_seg, beat_interval))
             readings.append(self._aggregate(m + 1, halves))
         return readings
+
+    def reading_for_window(
+        self, samples, sr: int, start_s: float, spec: RhythmSpec, measure: int
+    ) -> MeasureReading:
+        import numpy as np
+
+        beat_interval = 60.0 / spec.bpm
+        half = spec.beats_per_measure // 2
+        rel = self.detector.detect_array(samples, sr)
+        if not rel:
+            return MeasureReading(
+                measure_index=measure, state=GOOD, valid=False, meta={}
+            )
+
+        beats = np.array([start_s + b for b in rel])
+        grid = start_s + np.arange(spec.beats_per_measure) * beat_interval
+        halves = []
+        for h in range(2):
+            t_start = start_s + h * half * beat_interval
+            t_end = t_start + half * beat_interval
+            grid_seg = grid[(grid >= t_start) & (grid < t_end)]
+            beats_seg = beats[(beats >= t_start) & (beats < t_end)]
+            halves.append(self._eval_half(grid_seg, beats_seg, beat_interval))
+        return self._aggregate(measure, halves)
 
     def _eval_half(self, grid_seg, beats_seg, beat_interval: float) -> dict:
         import numpy as np

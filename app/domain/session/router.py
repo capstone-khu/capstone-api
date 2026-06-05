@@ -9,7 +9,11 @@ from app.common.openapi import error_responses, success_response
 from app.common.persistence import get_db
 from app.common.response import ApiResponse
 from app.domain.auth.dependencies import get_current_user
-from app.domain.session.schema import SessionCreateRequest, SessionCreateResponse
+from app.domain.session.schema import (
+    SessionCompleteResponse,
+    SessionCreateRequest,
+    SessionCreateResponse,
+)
 from app.domain.session.service import SessionService
 from app.domain.user.model import User
 
@@ -62,6 +66,45 @@ async def create_session(
 ) -> ApiResponse[SessionCreateResponse, None]:
     data = await SessionService(db).create_session(current_user.id, request)
     return ApiResponse.created(SuccessCode.CREATED, data)
+
+
+@router.post(
+    "/{session_id}/complete",
+    summary="연주 세션 종료",
+    description=(
+        "연주를 정상 종료한다. 실시간 동안 메모리에 모은 피드백·Q 갱신을 "
+        "일괄적으로 영속하고 세션을 `completed` 로 닫는다. "
+        "본인 세션이 아니면 403, 없는 세션이면 404, "
+        "이미 종료된 세션이면 409로 막는다. "
+        "(녹음·녹화 파일 업로드와 협주 합성은 후속 단계에서 진행.)"
+    ),
+    response_model=ApiResponse[SessionCompleteResponse, None],
+    response_model_exclude_none=True,
+    responses={
+        **success_response(
+            200,
+            {
+                "success": True,
+                "status": 200,
+                "message": "요청에 성공했습니다.",
+                "data": {"session_id": 12},
+            },
+        ),
+        **error_responses(
+            ErrorCode.UNAUTHORIZED,
+            ErrorCode.FORBIDDEN_SESSION,
+            ErrorCode.SESSION_NOT_FOUND,
+            ErrorCode.SESSION_ALREADY_ENDED,
+        ),
+    },
+)
+async def complete_session(
+    session_id: int,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[SessionCompleteResponse, None]:
+    data = await SessionService(db).complete_session(current_user.id, session_id)
+    return ApiResponse.ok(SuccessCode.OK, data)
 
 
 @router.post(

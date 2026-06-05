@@ -25,6 +25,8 @@ class QLearningEngine:
         self.policy = policy
         self.q = q
         self.updated: set[tuple[str, str]] = set()
+        self._prev_state: str | None = None
+        self._prev_action: ActionSpec | None = None
 
     def run(self, readings: list[MeasureReading]) -> list[AgentOutput]:
         outputs: list[AgentOutput] = []
@@ -60,6 +62,38 @@ class QLearningEngine:
             prev_state, prev_action = state, action
 
         return outputs
+
+    def step(self, reading: MeasureReading) -> AgentOutput | None:
+        """실시간용 — 마디 1개 측정을 받아 직전 마디와의 전이로 Q 갱신.
+
+        run() 한 바퀴분과 같지만 prev 상태를 인스턴스에 들고 마디마다 호출한다.
+        측정이 무효면(프레임 부족 등) 건너뛰고 None(전이도 보존).
+        """
+        if not reading.valid:
+            return None
+
+        state = reading.state
+        action = self._best_action(state)
+
+        reward: float | None = None
+        if self._prev_state is not None and self._prev_action is not None:
+            reward = self._reward(self._prev_state, self._prev_action, state)
+            self._update(self._prev_state, self._prev_action.action, reward, state)
+
+        output = AgentOutput(
+            domain=self.policy.domain,
+            measure_index=reading.measure_index,
+            state=state,
+            action_id=action.action_id,
+            action=action.action,
+            feedback=action.feedback,
+            reward=reward,
+            q=round(self._get(state, action.action), 3),
+            cause_domain=None,
+            meta=reading.meta or None,
+        )
+        self._prev_state, self._prev_action = state, action
+        return output
 
     def _best_action(self, state: str) -> ActionSpec:
         actions = self.policy.available_actions(state)
