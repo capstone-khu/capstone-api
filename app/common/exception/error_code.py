@@ -24,6 +24,10 @@ class ErrorCode(Enum):
     # ===== RECORDING =====
     RECORDING_NOT_FOUND = (404, "REC_404_001", "존재하지 않는 녹음입니다.")
 
+    # ===== DUET =====
+    FORBIDDEN_DUET = (403, "DUE_403_001", "본인의 협주 영상이 아닙니다.")
+    DUET_NOT_FOUND = (404, "DUE_404_001", "존재하지 않는 협주 영상입니다.")
+
     def __init__(self, status: int, code: str, message: str) -> None:
         self.status = status
         self.code = code
