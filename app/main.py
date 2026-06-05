@@ -1,3 +1,5 @@
+import asyncio
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -8,6 +10,7 @@ from app.common import health
 from app.common.config import settings
 from app.common.exception.handlers import add_exception_handlers
 from app.common.media import sync_seed_media
+from app.domain.agent.realtime.warmup import warm_blocking
 from app.domain.auth import router as auth_router
 from app.domain.session import duet_router as session_duet_router
 from app.domain.session import router as session_router
@@ -15,11 +18,22 @@ from app.domain.session import ws as session_ws
 from app.domain.song import router as song_router
 from app.domain.user import router as user_router
 
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     sync_seed_media()
+    asyncio.create_task(_warmup())
     yield
+
+
+async def _warmup() -> None:
+    """부팅 직후 실시간 측정 스택을 백그라운드로 워밍업 한다(서빙 차단 안 함)."""
+    try:
+        await asyncio.get_event_loop().run_in_executor(None, warm_blocking)
+    except Exception:
+        logger.exception("워밍업 태스크 실패")
 
 DESCRIPTION = """\
 캡스톤 백엔드 API.
