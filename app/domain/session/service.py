@@ -1,0 +1,52 @@
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.common.exception.business import BusinessException
+from app.common.exception.error_code import ErrorCode
+from app.domain.session.repository import SessionRepository
+from app.domain.session.schema import SessionCreateRequest, SessionCreateResponse
+from app.domain.song.repository import SongRepository
+
+
+class SessionService:
+
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+        self.sessions = SessionRepository(session)
+        self.songs = SongRepository(session)
+
+    async def create_session(
+        self, user_id: int, request: SessionCreateRequest
+    ) -> SessionCreateResponse:
+        song = await self.songs.get_by_id(request.song_id)
+        if song is None:
+            raise BusinessException(ErrorCode.SONG_NOT_FOUND)
+
+        partner_name = None
+        audio_url = None
+        if request.mode == "duet":
+            found = await self.sessions.get_recording_with_partner(
+                request.partner_recording_id
+            )
+            if found is None:
+                raise BusinessException(ErrorCode.RECORDING_NOT_FOUND)
+            recording, name = found
+            if recording.song_id != request.song_id or recording.user_id == user_id:
+                raise BusinessException(ErrorCode.INVALID_DUET_PARTNER)
+            partner_name = name
+            audio_url = recording.audio_url
+
+        session = await self.sessions.create(
+            user_id=user_id,
+            song_id=request.song_id,
+            mode=request.mode,
+            partner_recording_id=request.partner_recording_id,
+        )
+        await self.session.commit()
+
+        return SessionCreateResponse(
+            session_id=session.id,
+            status=session.status,
+            song_title=song.title,
+            partner_name=partner_name,
+            audio_url=audio_url,
+        )
