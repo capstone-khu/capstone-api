@@ -22,7 +22,7 @@ RUN useradd -m -u 1000 appuser
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        libgl1 libglib2.0-0 libgles2 ffmpeg \
+        libgl1 libegl1 libegl-mesa0 libglib2.0-0 libgles2 ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder --chown=appuser:appuser /app /app
