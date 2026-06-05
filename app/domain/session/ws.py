@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 from concurrent.futures import ThreadPoolExecutor
 
 import jwt
@@ -13,6 +14,8 @@ from app.domain.agent.realtime.supervisor import resolve_cause
 from app.domain.agent.schema import AgentOutput, Domain
 from app.domain.auth.security import decode_token
 from app.domain.session.model import Session
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["session"])
 
@@ -63,6 +66,7 @@ async def stream(websocket: WebSocket, session_id: int) -> None:
     except WebSocketDisconnect:
         pass
     except Exception:
+        logger.exception("WS stream 처리 중 오류 (session_id=%s)", session_id)
         await websocket.close(code=CLOSE_INTERNAL)
     finally:
         for task in tasks:
