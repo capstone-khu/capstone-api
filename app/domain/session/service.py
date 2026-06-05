@@ -1,3 +1,4 @@
+from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.exception.business import BusinessException
@@ -50,3 +51,16 @@ class SessionService:
             partner_name=partner_name,
             audio_url=audio_url,
         )
+
+    async def abort_session(self, user_id: int, session_id: int) -> None:
+        session = await self.sessions.get_by_id(session_id)
+        if session is None:
+            raise BusinessException(ErrorCode.SESSION_NOT_FOUND)
+        if session.user_id != user_id:
+            raise BusinessException(ErrorCode.FORBIDDEN_SESSION)
+        if session.status in ("completed", "aborted"):
+            raise BusinessException(ErrorCode.SESSION_ALREADY_ENDED)
+
+        session.status = "aborted"
+        session.ended_at = func.now()
+        await self.session.commit()
