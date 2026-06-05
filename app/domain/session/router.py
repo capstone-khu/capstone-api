@@ -62,3 +62,39 @@ async def create_session(
 ) -> ApiResponse[SessionCreateResponse, None]:
     data = await SessionService(db).create_session(current_user.id, request)
     return ApiResponse.created(SuccessCode.CREATED, data)
+
+
+@router.post(
+    "/{session_id}/abort",
+    summary="연주 세션 중도 종료",
+    description=(
+        "연주를 중도 종료한다. 이번 연주는 저장하지 않고 세션을 `aborted` 로 닫는다. "
+        "본인 세션이 아니면 403, 없는 세션이면 404, "
+        "이미 종료된 세션이면 409로 막는다."
+    ),
+    response_model=ApiResponse[None, None],
+    response_model_exclude_none=True,
+    responses={
+        **success_response(
+            200,
+            {
+                "success": True,
+                "status": 200,
+                "message": "요청에 성공했습니다.",
+            },
+        ),
+        **error_responses(
+            ErrorCode.UNAUTHORIZED,
+            ErrorCode.FORBIDDEN_SESSION,
+            ErrorCode.SESSION_NOT_FOUND,
+            ErrorCode.SESSION_ALREADY_ENDED,
+        ),
+    },
+)
+async def abort_session(
+    session_id: int,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[None, None]:
+    await SessionService(db).abort_session(current_user.id, session_id)
+    return ApiResponse.ok(SuccessCode.OK)
