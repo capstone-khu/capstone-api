@@ -20,17 +20,24 @@ class PitchMeasurer:
 
     def measure(self, audio_path: str, score: Score) -> list[MeasureReading]:
         import librosa
-        import noisereduce as nr
-        import numpy as np
         from swift_f0 import core
 
-        y, sr = librosa.load(audio_path, sr=SAMPLE_RATE, mono=True)
+        y, _ = librosa.load(audio_path, sr=SAMPLE_RATE, mono=True)
         model = core.SwiftF0()
+        cents_by_measure = self.accumulate_cents(y, score, model)
+        return self._aggregate(score, cents_by_measure)
+
+    def accumulate_cents(
+        self, y, score: Score, model, time_offset: float = 0.0
+    ) -> dict[int, list[float]]:
+        import noisereduce as nr
+        import numpy as np
+
         cents_by_measure: dict[int, list[float]] = {}
         prev_f0 = 0.0
 
         for i in range(0, len(y) - FRAME_SIZE, FRAME_SIZE):
-            timestamp = i / float(sr)
+            timestamp = time_offset + i / float(SAMPLE_RATE)
             target = score.target_at(timestamp)
             if target is None or target.get("measure") is None:
                 continue
@@ -59,7 +66,30 @@ class PitchMeasurer:
 
             cents_by_measure.setdefault(target["measure"], []).append(cents)
 
-        return self._aggregate(score, cents_by_measure)
+        return cents_by_measure
+
+    def reading_for_window(
+        self, samples, start_s: float, score: Score, measure: int, model
+    ) -> MeasureReading:
+        from statistics import fmean
+
+        cents_by_measure = self.accumulate_cents(samples, score, model, start_s)
+        cents_list = cents_by_measure.get(measure, [])
+        if len(cents_list) < MIN_VALID_FRAMES:
+            return MeasureReading(
+                measure_index=measure,
+                state=classify_cents(0.0),
+                valid=False,
+                meta={"frames": len(cents_list)},
+            )
+
+        avg_cents = fmean(cents_list)
+        return MeasureReading(
+            measure_index=measure,
+            state=classify_cents(avg_cents),
+            valid=True,
+            meta={"avg_cents": round(avg_cents, 1), "frames": len(cents_list)},
+        )
 
     def _aggregate(
         self, score: Score, cents_by_measure: dict[int, list[float]]
