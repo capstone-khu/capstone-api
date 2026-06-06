@@ -16,7 +16,7 @@ class UserService:
             user_id, offset=(page - 1) * size, limit=size
         )
 
-        session_ids = [session.id for session, _ in rows]
+        session_ids = [session.id for session, _, _ in rows]
         counts: dict[int, dict[str, int]] = {}
         focus_measures: dict[int, list[int]] = {}
         duet_ids: dict[int, int] = {}
@@ -38,7 +38,8 @@ class UserService:
                 ),
                 focus_measures=focus_measures.get(session.id, []),
                 duet_composite_id=duet_ids.get(session.id),
+                partner_name=partner_name,
             )
-            for session, song_title in rows
+            for session, song_title, partner_name in rows
         ]
         return HistoryResponse(page=page, size=size, total=total, items=items)

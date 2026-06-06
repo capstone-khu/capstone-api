@@ -2,7 +2,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.agent.model import FeedbackEvent
-from app.domain.session.model import DuetVideo, Session
+from app.domain.session.model import DuetVideo, Recording, Session
 from app.domain.song.model import Song
 from app.domain.user.model import User
 
@@ -29,16 +29,18 @@ class UserRepository:
 
     async def completed_sessions_page(
         self, user_id: int, offset: int, limit: int
-    ) -> list[tuple[Session, str]]:
+    ) -> list[tuple[Session, str, str | None]]:
         result = await self.session.execute(
-            select(Session, Song.title)
+            select(Session, Song.title, User.name)
             .join(Song, Song.id == Session.song_id)
+            .outerjoin(Recording, Recording.id == Session.partner_recording_id)
+            .outerjoin(User, User.id == Recording.user_id)
             .where(Session.user_id == user_id, Session.status == "completed")
             .order_by(Session.ended_at.desc(), Session.id.desc())
             .offset(offset)
             .limit(limit)
         )
-        return [(row[0], row[1]) for row in result.all()]
+        return [(row[0], row[1], row[2]) for row in result.all()]
 
     async def problem_counts(
         self, session_ids: list[int]

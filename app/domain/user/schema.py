@@ -33,6 +33,7 @@ class HistoryItem(BaseModel):
     stats: HistoryStats
     focus_measures: list[int]
     duet_composite_id: int | None = None
+    partner_name: str | None = None
 
 
 class HistoryResponse(BaseModel):
@@ -51,6 +52,7 @@ class HistoryResponse(BaseModel):
                         "stats": {"pitch": 3, "rhythm": 1, "posture": 2},
                         "focus_measures": [5, 7],
                         "duet_composite_id": 5,
+                        "partner_name": "이준호",
                     },
                     {
                         "session_id": 10,
