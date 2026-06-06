@@ -178,7 +178,8 @@ async def previous_markings(
         "이번 세션은 채움 표시(current), 직전 완료 세션은 "
         "외곽선 표시(previous)로 반환한다. "
         "마킹은 문제 마디(`state != GOOD`)만 포함한다. "
-        "직전 완료 세션이 없으면 previous 는 빈 배열이다."
+        "직전 완료 세션이 없으면 previous 는 빈 배열이다. "
+        "완료되지 않은 세션이면 409 를 반환한다."
     ),
     response_model=ApiResponse[SessionResultResponse, None],
     response_model_exclude_none=True,
@@ -222,6 +223,7 @@ async def previous_markings(
             ErrorCode.UNAUTHORIZED,
             ErrorCode.FORBIDDEN_SESSION,
             ErrorCode.SESSION_NOT_FOUND,
+            ErrorCode.SESSION_NOT_COMPLETED,
         ),
     },
 )
@@ -241,7 +243,8 @@ async def get_session_result(
         "결과 화면의 마디 상세 모달 데이터를 조회한다. "
         "해당 마디의 음표 배열과 이번 세션·직전 세션의 "
         "마킹(`state != GOOD`)을 함께 반환한다. "
-        "직전 완료 세션이 없으면 previous_markings 는 빈 배열이다."
+        "직전 완료 세션이 없으면 previous_markings 는 빈 배열이다. "
+        "곡에 없는 마디면 404 를 반환한다."
     ),
     response_model=ApiResponse[MeasureDetailResponse, None],
     response_model_exclude_none=True,
@@ -277,6 +280,7 @@ async def get_session_result(
             ErrorCode.UNAUTHORIZED,
             ErrorCode.FORBIDDEN_SESSION,
             ErrorCode.SESSION_NOT_FOUND,
+            ErrorCode.MEASURE_NOT_FOUND,
         ),
     },
 )

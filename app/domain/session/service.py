@@ -208,6 +208,8 @@ class SessionService:
             raise BusinessException(ErrorCode.SESSION_NOT_FOUND)
         if session.user_id != user_id:
             raise BusinessException(ErrorCode.FORBIDDEN_SESSION)
+        if session.status != "completed":
+            raise BusinessException(ErrorCode.SESSION_NOT_COMPLETED)
 
         song = await self.songs.get_by_id(session.song_id)
 
@@ -281,7 +283,9 @@ class SessionService:
             raise BusinessException(ErrorCode.FORBIDDEN_SESSION)
 
         measure = await self.songs.get_measure(session.song_id, measure_index)
-        notes = [NoteItem(**n) for n in (measure.notes if measure else [])]
+        if measure is None:
+            raise BusinessException(ErrorCode.MEASURE_NOT_FOUND)
+        notes = [NoteItem(**n) for n in measure.notes]
 
         agent_repo = AgentRepository(self.session)
         current_rows = await agent_repo.markings_for_measure(session_id, measure_index)

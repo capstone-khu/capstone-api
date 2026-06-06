@@ -23,10 +23,12 @@
 | COM_500_001 | 500 | 서버 내부 오류가 발생했습니다. |
 | AUT_401_001 | 401 | 이름 또는 비밀번호가 올바르지 않습니다. |
 | SON_404_001 | 404 | 존재하지 않는 곡입니다. |
+| SON_404_002 | 404 | 존재하지 않는 마디입니다. |
 | SES_400_001 | 400 | 협주 상대 녹음이 올바르지 않습니다. |
 | SES_403_001 | 403 | 본인의 세션이 아닙니다. |
 | SES_404_001 | 404 | 존재하지 않는 세션입니다. |
 | SES_409_001 | 409 | 이미 종료된 세션입니다. |
+| SES_409_002 | 409 | 완료되지 않은 세션입니다. |
 | REC_404_001 | 404 | 존재하지 않는 녹음입니다. |
 | DUE_403_001 | 403 | 본인의 협주 영상이 아닙니다. |
 | DUE_404_001 | 404 | 존재하지 않는 협주 영상입니다. |
@@ -1175,7 +1177,7 @@ Content-Type: video/webm
 ## 4.5 결과 조회
 
 **1. API 설명**
-세션의 마디별 누적 마킹을 조회한다. 이번 세션(채움)과 같은 user×song 의 모드 무관 직전 완료 세션(외곽선)을 함께 반환한다. 마킹은 **문제 마디만**(`state != GOOD`) 표시한다 — `feedback_events` 엔 GOOD도 저장되지만 결과 화면은 문제 위주다(DESIGN #25).
+세션의 마디별 누적 마킹을 조회한다. 이번 세션(채움)과 같은 user×song 의 모드 무관 직전 완료 세션(외곽선)을 함께 반환한다. 마킹은 **문제 마디만**(`state != GOOD`) 표시한다 — `feedback_events` 엔 GOOD도 저장되지만 결과 화면은 문제 위주다(DESIGN #25). **완료(`completed`)된 세션만 조회할 수 있다** — 그 외 상태(`created`/`in_progress`/`aborted`)면 `409`(SES_409_002)를 반환한다.
 
 **2. Endpoint + Method**
 `GET /sessions/{session_id}/result`
@@ -1268,6 +1270,16 @@ Content-Type: video/webm
   "meta": { "path": "/sessions/999/result", "timestamp": 1733132400000 }
 }
 ```
+`409 Conflict` — 완료되지 않은 세션
+```json
+{
+  "success": false,
+  "status": 409,
+  "message": "완료되지 않은 세션입니다.",
+  "code": "SES_409_002",
+  "meta": { "path": "/sessions/12/result", "timestamp": 1733132400000 }
+}
+```
 `500 Internal Server Error`
 ```json
 {
@@ -1284,7 +1296,7 @@ Content-Type: video/webm
 ## 4.6 마디 상세 조회
 
 **1. API 설명**
-결과 화면의 마디 상세 모달 데이터(큰 악보 + 이번/이전 세션 마킹)를 조회한다.
+결과 화면의 마디 상세 모달 데이터(큰 악보 + 이번/이전 세션 마킹)를 조회한다. 곡에 존재하지 않는 `measure_index` 면 `404`(SON_404_002)를 반환한다.
 
 **2. Endpoint + Method**
 `GET /sessions/{session_id}/measures/{measure_index}`
@@ -1364,7 +1376,7 @@ Content-Type: video/webm
   "meta": { "path": "/sessions/12/measures/1", "timestamp": 1733132400000 }
 }
 ```
-`404 Not Found`
+`404 Not Found` — 존재하지 않는 세션
 ```json
 {
   "success": false,
@@ -1372,6 +1384,16 @@ Content-Type: video/webm
   "message": "존재하지 않는 세션입니다.",
   "code": "SES_404_001",
   "meta": { "path": "/sessions/999/measures/1", "timestamp": 1733132400000 }
+}
+```
+`404 Not Found` — 곡에 없는 마디
+```json
+{
+  "success": false,
+  "status": 404,
+  "message": "존재하지 않는 마디입니다.",
+  "code": "SON_404_002",
+  "meta": { "path": "/sessions/12/measures/999", "timestamp": 1733132400000 }
 }
 ```
 `500 Internal Server Error`

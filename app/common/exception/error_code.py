@@ -14,12 +14,14 @@ class ErrorCode(Enum):
 
     # ===== SONG =====
     SONG_NOT_FOUND = (404, "SON_404_001", "존재하지 않는 곡입니다.")
+    MEASURE_NOT_FOUND = (404, "SON_404_002", "존재하지 않는 마디입니다.")
 
     # ===== SESSION =====
     INVALID_DUET_PARTNER = (400, "SES_400_001", "협주 상대 녹음이 올바르지 않습니다.")
     FORBIDDEN_SESSION = (403, "SES_403_001", "본인의 세션이 아닙니다.")
     SESSION_NOT_FOUND = (404, "SES_404_001", "존재하지 않는 세션입니다.")
     SESSION_ALREADY_ENDED = (409, "SES_409_001", "이미 종료된 세션입니다.")
+    SESSION_NOT_COMPLETED = (409, "SES_409_002", "완료되지 않은 세션입니다.")
 
     # ===== RECORDING =====
     RECORDING_NOT_FOUND = (404, "REC_404_001", "존재하지 않는 녹음입니다.")
