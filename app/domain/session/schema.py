@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, model_validator
@@ -213,4 +212,4 @@ class DuetVideoResponse(BaseModel):
     partner_name: str
     status: str
     composite_video_url: str | None = None
-    created_at: datetime
+    created_at: KSTDateTime
