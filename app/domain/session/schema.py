@@ -81,6 +81,7 @@ class NoteItem(BaseModel):
     duration: str
     position: int
     lyric: str | None = None
+    note_count: int = 1
 
 
 class MeasureDetailResponse(BaseModel):
