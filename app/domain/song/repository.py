@@ -26,6 +26,15 @@ class SongRepository:
         )
         return list(result.scalars().all())
 
+    async def get_measure(self, song_id: int, measure_index: int) -> SongMeasure | None:
+        result = await self.session.execute(
+            select(SongMeasure).where(
+                SongMeasure.song_id == song_id,
+                SongMeasure.measure_index == measure_index,
+            )
+        )
+        return result.scalars().first()
+
     async def list_duet_partners(
         self, song_id: int, exclude_user_id: int
     ) -> list[tuple[Recording, str]]:

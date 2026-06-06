@@ -10,6 +10,7 @@ from app.common.persistence import get_db
 from app.common.response import ApiResponse
 from app.domain.auth.dependencies import get_current_user
 from app.domain.session.schema import (
+    MeasureDetailResponse,
     PreviousMarkingsResponse,
     SessionCompleteResponse,
     SessionCreateRequest,
@@ -221,6 +222,54 @@ async def get_session_result(
     db: AsyncSession = Depends(get_db),
 ) -> ApiResponse[SessionResultResponse, None]:
     data = await SessionService(db).get_session_result(current_user.id, session_id)
+    return ApiResponse.ok(SuccessCode.OK, data)
+
+
+@router.get(
+    "/{session_id}/measures/{measure_index}",
+    summary="마디 상세 조회",
+    description=(
+        "결과 화면의 마디 상세 모달 데이터를 조회한다. "
+        "해당 마디의 음표 배열과 이번 세션·직전 세션의 마킹(`state != GOOD`)을 함께 반환한다. "
+        "직전 완료 세션이 없으면 previous_markings 는 빈 배열이다."
+    ),
+    response_model=ApiResponse[MeasureDetailResponse, None],
+    response_model_exclude_none=True,
+    responses={
+        **success_response(
+            200,
+            {
+                "success": True,
+                "status": 200,
+                "message": "요청에 성공했습니다.",
+                "data": {
+                    "measure_index": 1,
+                    "notes": [
+                        {"pitch": "D4", "duration": "quarter", "position": 0, "lyric": "반"}
+                    ],
+                    "current_markings": [
+                        {"domain": "pitch", "action_id": "PT-03", "feedback": "음정을 내리세요"}
+                    ],
+                    "previous_markings": [],
+                },
+            },
+        ),
+        **error_responses(
+            ErrorCode.UNAUTHORIZED,
+            ErrorCode.FORBIDDEN_SESSION,
+            ErrorCode.SESSION_NOT_FOUND,
+        ),
+    },
+)
+async def get_measure_detail(
+    session_id: int,
+    measure_index: int,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[MeasureDetailResponse, None]:
+    data = await SessionService(db).get_measure_detail(
+        current_user.id, session_id, measure_index
+    )
     return ApiResponse.ok(SuccessCode.OK, data)
 
 

@@ -28,6 +28,18 @@ class AgentRepository:
         )
         return list(result.scalars().all())
 
+    async def markings_for_measure(
+        self, session_id: int, measure_index: int
+    ) -> list[FeedbackEvent]:
+        result = await self.session.execute(
+            select(FeedbackEvent).where(
+                FeedbackEvent.session_id == session_id,
+                FeedbackEvent.measure_index == measure_index,
+                FeedbackEvent.state != "GOOD",
+            )
+        )
+        return list(result.scalars().all())
+
     async def upsert_q_values(
         self, user_id: int, entries: list[dict]
     ) -> None:

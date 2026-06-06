@@ -76,6 +76,35 @@ class PreviousMarkingsResponse(BaseModel):
     measures: list[MeasureMarkings]
 
 
+class NoteItem(BaseModel):
+    pitch: str
+    duration: str
+    position: int
+    lyric: str | None = None
+
+
+class MeasureDetailResponse(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "measure_index": 1,
+                "notes": [
+                    {"pitch": "D4", "duration": "quarter", "position": 0, "lyric": "반"}
+                ],
+                "current_markings": [
+                    {"domain": "pitch", "action_id": "PT-03", "feedback": "음정을 내리세요"}
+                ],
+                "previous_markings": [],
+            }
+        }
+    )
+
+    measure_index: int
+    notes: list[NoteItem]
+    current_markings: list[Marking]
+    previous_markings: list[Marking]
+
+
 class MeasureResult(BaseModel):
     measure_index: int
     current: list[Marking]
