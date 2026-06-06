@@ -14,6 +14,7 @@ from app.domain.session.schema import (
     SessionCompleteResponse,
     SessionCreateRequest,
     SessionCreateResponse,
+    SessionResultResponse,
 )
 from app.domain.session.service import SessionService
 from app.domain.user.model import User
@@ -165,6 +166,61 @@ async def previous_markings(
     db: AsyncSession = Depends(get_db),
 ) -> ApiResponse[PreviousMarkingsResponse, None]:
     data = await SessionService(db).previous_markings(current_user.id, session_id)
+    return ApiResponse.ok(SuccessCode.OK, data)
+
+
+@router.get(
+    "/{session_id}/result",
+    summary="세션 결과 마킹 조회",
+    description=(
+        "세션의 마디별 누적 마킹을 조회한다. "
+        "이번 세션은 채움 표시(current), 직전 완료 세션은 외곽선 표시(previous)로 반환한다. "
+        "마킹은 문제 마디(`state != GOOD`)만 포함한다. "
+        "직전 완료 세션이 없으면 previous 는 빈 배열이다."
+    ),
+    response_model=ApiResponse[SessionResultResponse, None],
+    response_model_exclude_none=True,
+    responses={
+        **success_response(
+            200,
+            {
+                "success": True,
+                "status": 200,
+                "message": "요청에 성공했습니다.",
+                "data": {
+                    "session_id": 12,
+                    "song_id": 1,
+                    "song_title": "반짝 반짝 작은별",
+                    "played_at": "2026-06-02T09:30:00+09:00",
+                    "mode": "duet",
+                    "partner_name": "손수민",
+                    "measures": [
+                        {
+                            "measure_index": 1,
+                            "current": [
+                                {"domain": "pitch", "action_id": "PT-03", "feedback": "음정을 내리세요"}
+                            ],
+                            "previous": [
+                                {"domain": "rhythm", "action_id": "RH-03", "feedback": "박자보다 늦게 연주하고 있습니다"}
+                            ],
+                        }
+                    ],
+                },
+            },
+        ),
+        **error_responses(
+            ErrorCode.UNAUTHORIZED,
+            ErrorCode.FORBIDDEN_SESSION,
+            ErrorCode.SESSION_NOT_FOUND,
+        ),
+    },
+)
+async def get_session_result(
+    session_id: int,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[SessionResultResponse, None]:
+    data = await SessionService(db).get_session_result(current_user.id, session_id)
     return ApiResponse.ok(SuccessCode.OK, data)
 
 
