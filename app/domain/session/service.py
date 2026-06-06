@@ -14,8 +14,10 @@ from app.domain.session.repository import SessionRepository
 from app.domain.session.schema import (
     DuetVideoResponse,
     Marking,
+    MeasureDetailResponse,
     MeasureMarkings,
     MeasureResult,
+    NoteItem,
     PreviousMarkingsResponse,
     SessionCompleteResponse,
     SessionCreateRequest,
@@ -259,6 +261,43 @@ class SessionService:
             mode=session.mode,
             partner_name=partner_name,
             measures=measures,
+        )
+
+    async def get_measure_detail(
+        self, user_id: int, session_id: int, measure_index: int
+    ) -> MeasureDetailResponse:
+        session = await self.sessions.get_by_id(session_id)
+        if session is None:
+            raise BusinessException(ErrorCode.SESSION_NOT_FOUND)
+        if session.user_id != user_id:
+            raise BusinessException(ErrorCode.FORBIDDEN_SESSION)
+
+        measure = await self.songs.get_measure(session.song_id, measure_index)
+        notes = [NoteItem(**n) for n in (measure.notes if measure else [])]
+
+        agent_repo = AgentRepository(self.session)
+        current_rows = await agent_repo.markings_for_measure(session_id, measure_index)
+        current_markings = [
+            Marking(domain=r.domain, action_id=r.action_id, feedback=r.feedback)
+            for r in current_rows
+        ]
+
+        previous = await self.sessions.latest_completed(
+            user_id, session.song_id, session_id
+        )
+        previous_markings = []
+        if previous is not None:
+            prev_rows = await agent_repo.markings_for_measure(previous.id, measure_index)
+            previous_markings = [
+                Marking(domain=r.domain, action_id=r.action_id, feedback=r.feedback)
+                for r in prev_rows
+            ]
+
+        return MeasureDetailResponse(
+            measure_index=measure_index,
+            notes=notes,
+            current_markings=current_markings,
+            previous_markings=previous_markings,
         )
 
     async def abort_session(self, user_id: int, session_id: int) -> None:
