@@ -61,7 +61,8 @@ async def get_my_profile(
         "완료(`completed`) 세션만 `played_at` 내림차순으로 반환하며, "
         "각 항목은 영역별 문제 개수(`state != GOOD`) 통계와 "
         "집중 반복 필요 마디(`focus_measures`)를 포함한다. "
-        "협주 기록이면 합성 영상 ID(`duet_composite_id`)를 함께 반환한다."
+        "협주 기록이면 합성 영상 ID(`duet_composite_id`)와 "
+        "협주 상대 이름(`partner_name`)을 함께 반환한다."
     ),
     response_model=ApiResponse[HistoryResponse, None],
     response_model_exclude_none=True,
@@ -85,6 +86,7 @@ async def get_my_profile(
                             "stats": {"pitch": 3, "rhythm": 1, "posture": 2},
                             "focus_measures": [5, 7],
                             "duet_composite_id": 5,
+                            "partner_name": "이준호",
                         },
                         {
                             "session_id": 10,
