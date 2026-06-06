@@ -158,6 +158,55 @@ class SessionResultResponse(BaseModel):
     measures: list[MeasureResult]
 
 
+class DomainAnalysis(BaseModel):
+    level: str
+    diagnosis: str
+    practice: str | None = None
+
+
+class AnalysisDomains(BaseModel):
+    pitch: DomainAnalysis
+    rhythm: DomainAnalysis
+    posture: DomainAnalysis
+
+
+class SessionAnalysisResponse(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "session_id": 12,
+                "headline": "이번엔 음정이 제일 아쉬웠어요",
+                "coach_comment": (
+                    "음정이 자주 흔들렸고, 자세가 무너질 때 음정도 같이 흔들렸어요."
+                ),
+                "domains": {
+                    "pitch": {
+                        "level": "weak",
+                        "diagnosis": "높은 음에서 음정이 올라갔어요",
+                        "practice": "스케일을 천천히 반복해보세요",
+                    },
+                    "rhythm": {
+                        "level": "ok",
+                        "diagnosis": "일부 구간에서 살짝 늦었어요",
+                        "practice": "메트로놈에 맞춰 연습해보세요",
+                    },
+                    "posture": {
+                        "level": "good",
+                        "diagnosis": "자세는 안정적이었어요",
+                    },
+                },
+                "focus_measures": [5, 7],
+            }
+        }
+    )
+
+    session_id: int
+    headline: str
+    coach_comment: str
+    domains: AnalysisDomains
+    focus_measures: list[int]
+
+
 class DuetVideoResponse(BaseModel):
     duet_composite_id: int
     song_title: str

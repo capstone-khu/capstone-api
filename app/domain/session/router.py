@@ -12,6 +12,7 @@ from app.domain.auth.dependencies import get_current_user
 from app.domain.session.schema import (
     MeasureDetailResponse,
     PreviousMarkingsResponse,
+    SessionAnalysisResponse,
     SessionCompleteResponse,
     SessionCreateRequest,
     SessionCreateResponse,
@@ -293,6 +294,70 @@ async def get_measure_detail(
     data = await SessionService(db).get_measure_detail(
         current_user.id, session_id, measure_index
     )
+    return ApiResponse.ok(SuccessCode.OK, data)
+
+
+@router.get(
+    "/{session_id}/analysis",
+    summary="AI 상세 분석 조회",
+    description=(
+        "세션의 AI 상세 분석을 조회한다. "
+        "저장된 리포트가 없으면 첫 호출에서 LLM 으로 동기 생성(수 초 블로킹)한 뒤 "
+        "캐시하고, 이후 같은 세션은 저장본을 반환한다. "
+        "`focus_measures` 는 캐시와 무관하게 매번 도출한다. "
+        "완료되지 않은 세션이면 409, LLM 생성 실패 시 저장 없이 503 을 반환한다."
+    ),
+    response_model=ApiResponse[SessionAnalysisResponse, None],
+    response_model_exclude_none=True,
+    responses={
+        **success_response(
+            200,
+            {
+                "success": True,
+                "status": 200,
+                "message": "요청에 성공했습니다.",
+                "data": {
+                    "session_id": 12,
+                    "headline": "이번엔 음정이 제일 아쉬웠어요",
+                    "coach_comment": (
+                        "음정이 자주 흔들렸고, 자세가 무너질 때 "
+                        "음정도 같이 흔들렸어요."
+                    ),
+                    "domains": {
+                        "pitch": {
+                            "level": "weak",
+                            "diagnosis": "높은 음에서 음정이 올라갔어요",
+                            "practice": "스케일을 천천히 반복해보세요",
+                        },
+                        "rhythm": {
+                            "level": "ok",
+                            "diagnosis": "일부 구간에서 살짝 늦었어요",
+                            "practice": "메트로놈에 맞춰 연습해보세요",
+                        },
+                        "posture": {
+                            "level": "good",
+                            "diagnosis": "자세는 안정적이었어요",
+                        },
+                    },
+                    "focus_measures": [5, 7],
+                },
+            },
+        ),
+        **error_responses(
+            ErrorCode.UNAUTHORIZED,
+            ErrorCode.FORBIDDEN_SESSION,
+            ErrorCode.SESSION_NOT_FOUND,
+            ErrorCode.SESSION_NOT_COMPLETED,
+            ErrorCode.ANALYSIS_GENERATION_FAILED,
+        ),
+    },
+)
+async def get_session_analysis(
+    session_id: int,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: AsyncSession = Depends(get_db),
+) -> ApiResponse[SessionAnalysisResponse, None]:
+    data = await SessionService(db).get_session_analysis(current_user.id, session_id)
     return ApiResponse.ok(SuccessCode.OK, data)
 
 

@@ -22,6 +22,11 @@ class ErrorCode(Enum):
     SESSION_NOT_FOUND = (404, "SES_404_001", "존재하지 않는 세션입니다.")
     SESSION_ALREADY_ENDED = (409, "SES_409_001", "이미 종료된 세션입니다.")
     SESSION_NOT_COMPLETED = (409, "SES_409_002", "완료되지 않은 세션입니다.")
+    ANALYSIS_GENERATION_FAILED = (
+        503,
+        "SES_503_001",
+        "AI 분석 생성에 실패했습니다. 잠시 후 다시 시도해주세요.",
+    )
 
     # ===== RECORDING =====
     RECORDING_NOT_FOUND = (404, "REC_404_001", "존재하지 않는 녹음입니다.")

@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.dialects.mysql import insert as mysql_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,6 +14,27 @@ class AgentRepository:
     async def load_q_table(self, user_id: int) -> list[QTableEntry]:
         result = await self.session.execute(
             select(QTableEntry).where(QTableEntry.user_id == user_id)
+        )
+        return list(result.scalars().all())
+
+    async def events_for_session(self, session_id: int) -> list[FeedbackEvent]:
+        result = await self.session.execute(
+            select(FeedbackEvent)
+            .where(FeedbackEvent.session_id == session_id)
+            .order_by(FeedbackEvent.measure_index)
+        )
+        return list(result.scalars().all())
+
+    async def focus_measures(self, session_id: int) -> list[int]:
+        result = await self.session.execute(
+            select(FeedbackEvent.measure_index)
+            .where(
+                FeedbackEvent.session_id == session_id,
+                FeedbackEvent.state != "GOOD",
+            )
+            .group_by(FeedbackEvent.measure_index)
+            .having(func.count(func.distinct(FeedbackEvent.domain)) == 3)
+            .order_by(FeedbackEvent.measure_index)
         )
         return list(result.scalars().all())
 
