@@ -95,7 +95,7 @@ _MEASURES = [
 ]
 
 _PARTNER_NAME = "손수민"
-_PLAYED_AT = "2026-06-01 10:00:00"
+_PLAYED_AT = "2026-06-01 01:00:00"
 
 
 def upgrade() -> None:
