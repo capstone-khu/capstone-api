@@ -3,6 +3,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
+from app.common.types import KSTDateTime
+
 
 class SessionCreateRequest(BaseModel):
     model_config = ConfigDict(
@@ -72,6 +74,46 @@ class MeasureMarkings(BaseModel):
 class PreviousMarkingsResponse(BaseModel):
     previous_session_id: int | None = None
     measures: list[MeasureMarkings]
+
+
+class MeasureResult(BaseModel):
+    measure_index: int
+    current: list[Marking]
+    previous: list[Marking]
+
+
+class SessionResultResponse(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "session_id": 12,
+                "song_id": 1,
+                "song_title": "반짝 반짝 작은별",
+                "played_at": "2026-06-02T09:30:00+09:00",
+                "mode": "duet",
+                "partner_name": "이준호",
+                "measures": [
+                    {
+                        "measure_index": 1,
+                        "current": [
+                            {"domain": "pitch", "action_id": "PT-03", "feedback": "음정을 내리세요"}
+                        ],
+                        "previous": [
+                            {"domain": "rhythm", "action_id": "RH-03", "feedback": "박자보다 늦게 연주하고 있습니다"}
+                        ],
+                    }
+                ],
+            }
+        }
+    )
+
+    session_id: int
+    song_id: int
+    song_title: str
+    played_at: KSTDateTime
+    mode: str
+    partner_name: str | None = None
+    measures: list[MeasureResult]
 
 
 class DuetVideoResponse(BaseModel):

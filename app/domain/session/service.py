@@ -15,10 +15,12 @@ from app.domain.session.schema import (
     DuetVideoResponse,
     Marking,
     MeasureMarkings,
+    MeasureResult,
     PreviousMarkingsResponse,
     SessionCompleteResponse,
     SessionCreateRequest,
     SessionCreateResponse,
+    SessionResultResponse,
 )
 from app.domain.song.model import Song
 from app.domain.song.repository import SongRepository
@@ -194,6 +196,69 @@ class SessionService:
             status=duet.status,
             composite_video_url=duet.composite_video_url,
             created_at=duet.created_at,
+        )
+
+    async def get_session_result(
+        self, user_id: int, session_id: int
+    ) -> SessionResultResponse:
+        session = await self.sessions.get_by_id(session_id)
+        if session is None:
+            raise BusinessException(ErrorCode.SESSION_NOT_FOUND)
+        if session.user_id != user_id:
+            raise BusinessException(ErrorCode.FORBIDDEN_SESSION)
+
+        song = await self.songs.get_by_id(session.song_id)
+
+        agent_repo = AgentRepository(self.session)
+        current_rows = await agent_repo.markings_for_session(session_id)
+
+        previous = await self.sessions.latest_completed(
+            user_id, session.song_id, session_id
+        )
+        previous_rows = (
+            await agent_repo.markings_for_session(previous.id)
+            if previous is not None
+            else []
+        )
+
+        partner_name = None
+        if session.mode == "duet" and session.partner_recording_id is not None:
+            found = await self.sessions.get_recording_with_partner(
+                session.partner_recording_id
+            )
+            if found is not None:
+                _, partner_name = found
+
+        current_by_measure: dict[int, list[Marking]] = {}
+        for row in current_rows:
+            current_by_measure.setdefault(row.measure_index, []).append(
+                Marking(domain=row.domain, action_id=row.action_id, feedback=row.feedback)
+            )
+
+        previous_by_measure: dict[int, list[Marking]] = {}
+        for row in previous_rows:
+            previous_by_measure.setdefault(row.measure_index, []).append(
+                Marking(domain=row.domain, action_id=row.action_id, feedback=row.feedback)
+            )
+
+        all_measures = sorted(set(current_by_measure) | set(previous_by_measure))
+        measures = [
+            MeasureResult(
+                measure_index=m,
+                current=current_by_measure.get(m, []),
+                previous=previous_by_measure.get(m, []),
+            )
+            for m in all_measures
+        ]
+
+        return SessionResultResponse(
+            session_id=session_id,
+            song_id=session.song_id,
+            song_title=song.title,
+            played_at=session.ended_at,
+            mode=session.mode,
+            partner_name=partner_name,
+            measures=measures,
         )
 
     async def abort_session(self, user_id: int, session_id: int) -> None:
