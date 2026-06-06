@@ -175,7 +175,8 @@ async def previous_markings(
     summary="세션 결과 마킹 조회",
     description=(
         "세션의 마디별 누적 마킹을 조회한다. "
-        "이번 세션은 채움 표시(current), 직전 완료 세션은 외곽선 표시(previous)로 반환한다. "
+        "이번 세션은 채움 표시(current), 직전 완료 세션은 "
+        "외곽선 표시(previous)로 반환한다. "
         "마킹은 문제 마디(`state != GOOD`)만 포함한다. "
         "직전 완료 세션이 없으면 previous 는 빈 배열이다."
     ),
@@ -199,10 +200,18 @@ async def previous_markings(
                         {
                             "measure_index": 1,
                             "current": [
-                                {"domain": "pitch", "action_id": "PT-03", "feedback": "음정을 내리세요"}
+                                {
+                                    "domain": "pitch",
+                                    "action_id": "PT-03",
+                                    "feedback": "음정을 내리세요",
+                                }
                             ],
                             "previous": [
-                                {"domain": "rhythm", "action_id": "RH-03", "feedback": "박자보다 늦게 연주하고 있습니다"}
+                                {
+                                    "domain": "rhythm",
+                                    "action_id": "RH-03",
+                                    "feedback": "박자보다 늦게 연주하고 있습니다",
+                                }
                             ],
                         }
                     ],
@@ -230,7 +239,8 @@ async def get_session_result(
     summary="마디 상세 조회",
     description=(
         "결과 화면의 마디 상세 모달 데이터를 조회한다. "
-        "해당 마디의 음표 배열과 이번 세션·직전 세션의 마킹(`state != GOOD`)을 함께 반환한다. "
+        "해당 마디의 음표 배열과 이번 세션·직전 세션의 "
+        "마킹(`state != GOOD`)을 함께 반환한다. "
         "직전 완료 세션이 없으면 previous_markings 는 빈 배열이다."
     ),
     response_model=ApiResponse[MeasureDetailResponse, None],
@@ -245,10 +255,19 @@ async def get_session_result(
                 "data": {
                     "measure_index": 1,
                     "notes": [
-                        {"pitch": "D4", "duration": "quarter", "position": 0, "lyric": "반"}
+                        {
+                            "pitch": "D4",
+                            "duration": "quarter",
+                            "position": 0,
+                            "lyric": "반",
+                        }
                     ],
                     "current_markings": [
-                        {"domain": "pitch", "action_id": "PT-03", "feedback": "음정을 내리세요"}
+                        {
+                            "domain": "pitch",
+                            "action_id": "PT-03",
+                            "feedback": "음정을 내리세요",
+                        }
                     ],
                     "previous_markings": [],
                 },

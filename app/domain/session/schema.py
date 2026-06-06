@@ -92,7 +92,11 @@ class MeasureDetailResponse(BaseModel):
                     {"pitch": "D4", "duration": "quarter", "position": 0, "lyric": "반"}
                 ],
                 "current_markings": [
-                    {"domain": "pitch", "action_id": "PT-03", "feedback": "음정을 내리세요"}
+                    {
+                        "domain": "pitch",
+                        "action_id": "PT-03",
+                        "feedback": "음정을 내리세요",
+                    }
                 ],
                 "previous_markings": [],
             }
@@ -120,15 +124,23 @@ class SessionResultResponse(BaseModel):
                 "song_title": "반짝 반짝 작은별",
                 "played_at": "2026-06-02T09:30:00+09:00",
                 "mode": "duet",
-                "partner_name": "이준호",
+                "partner_name": "손수민",
                 "measures": [
                     {
                         "measure_index": 1,
                         "current": [
-                            {"domain": "pitch", "action_id": "PT-03", "feedback": "음정을 내리세요"}
+                            {
+                                "domain": "pitch",
+                                "action_id": "PT-03",
+                                "feedback": "음정을 내리세요",
+                            }
                         ],
                         "previous": [
-                            {"domain": "rhythm", "action_id": "RH-03", "feedback": "박자보다 늦게 연주하고 있습니다"}
+                            {
+                                "domain": "rhythm",
+                                "action_id": "RH-03",
+                                "feedback": "박자보다 늦게 연주하고 있습니다",
+                            }
                         ],
                     }
                 ],

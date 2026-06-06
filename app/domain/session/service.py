@@ -234,13 +234,21 @@ class SessionService:
         current_by_measure: dict[int, list[Marking]] = {}
         for row in current_rows:
             current_by_measure.setdefault(row.measure_index, []).append(
-                Marking(domain=row.domain, action_id=row.action_id, feedback=row.feedback)
+                Marking(
+                    domain=row.domain,
+                    action_id=row.action_id,
+                    feedback=row.feedback,
+                )
             )
 
         previous_by_measure: dict[int, list[Marking]] = {}
         for row in previous_rows:
             previous_by_measure.setdefault(row.measure_index, []).append(
-                Marking(domain=row.domain, action_id=row.action_id, feedback=row.feedback)
+                Marking(
+                    domain=row.domain,
+                    action_id=row.action_id,
+                    feedback=row.feedback,
+                )
             )
 
         all_measures = sorted(set(current_by_measure) | set(previous_by_measure))
@@ -287,7 +295,9 @@ class SessionService:
         )
         previous_markings = []
         if previous is not None:
-            prev_rows = await agent_repo.markings_for_measure(previous.id, measure_index)
+            prev_rows = await agent_repo.markings_for_measure(
+                previous.id, measure_index
+            )
             previous_markings = [
                 Marking(domain=r.domain, action_id=r.action_id, feedback=r.feedback)
                 for r in prev_rows
