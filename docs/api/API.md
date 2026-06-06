@@ -281,7 +281,7 @@
 ## 2.2 연주 이력 조회
 
 **1. API 설명**
-내 연주 이력을 페이지 단위(기본 3개)로 조회한다. 각 항목은 영역별 **문제 개수**(`state != GOOD`) 통계와 **집중 반복 필요 마디**(`focus_measures`)를 포함하며, 협주 기록은 합성 영상 ID를 함께 반환한다. (`feedback_events` 엔 GOOD도 저장되지만 stats는 문제만 센다 — DESIGN #25) `focus_measures` 가 비어있지 않으면 그 세션에 "집중 반복 레슨" 버튼을 노출하고, 각 마디 데이터는 §4.6 마디 상세 조회를 재사용한다(DESIGN #28). 목록은 `played_at` 내림차순(최신순)으로 정렬한다.
+내 연주 이력을 페이지 단위(기본 3개)로 조회한다. 각 항목은 영역별 **문제 개수**(`state != GOOD`) 통계와 **집중 반복 필요 마디**(`focus_measures`)를 포함하며, 협주 기록은 합성 영상 ID와 협주 상대 이름(`partner_name`)을 함께 반환해 카드에 "협주 · {이름}" 배지를 자족적으로 그릴 수 있게 한다. (`feedback_events` 엔 GOOD도 저장되지만 stats는 문제만 센다 — DESIGN #25) `focus_measures` 가 비어있지 않으면 그 세션에 "집중 반복 레슨" 버튼을 노출하고, 각 마디 데이터는 §4.6 마디 상세 조회를 재사용한다(DESIGN #28). 목록은 `played_at` 내림차순(최신순)으로 정렬한다.
 
 **2. Endpoint + Method**
 `GET /me/history`
@@ -322,6 +322,7 @@
 | items[].stats.posture | number | Y | 자세 문제 개수(GOOD 제외) | 2 |
 | items[].focus_measures | array | Y | 집중 반복 필요 마디(세 영역 모두 `state != GOOD`인 마디). 없으면 `[]` | [5, 7] |
 | items[].duet_composite_id | number | N | 협주 합성 영상 ID(협주 기록만) | 5 |
+| items[].partner_name | string | N | 협주 상대 이름(협주 기록만) | "이준호" |
 
 **9. Success Response Example (2xx)**
 `200 OK`
@@ -334,7 +335,7 @@
     "page": 1, "size": 3, "total": 7,
     "items": [
       { "session_id": 12, "song_title": "반짝 반짝 작은별", "played_at": "2026-06-02T09:30:00+09:00",
-        "mode": "duet", "stats": { "pitch": 3, "rhythm": 1, "posture": 2 }, "focus_measures": [5, 7], "duet_composite_id": 5 },
+        "mode": "duet", "stats": { "pitch": 3, "rhythm": 1, "posture": 2 }, "focus_measures": [5, 7], "duet_composite_id": 5, "partner_name": "이준호" },
       { "session_id": 10, "song_title": "반짝 반짝 작은별", "played_at": "2026-06-01T18:10:00+09:00",
         "mode": "solo", "stats": { "pitch": 0, "rhythm": 2, "posture": 1 }, "focus_measures": [] }
     ]
