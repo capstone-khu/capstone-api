@@ -190,38 +190,38 @@
 
 ---
 
-## 6. duet_composites
+## 6. duet_videos
 
 **1. 테이블 설명**
-협주 종료 시 내 영상과 상대 영상을 좌우 분할로 합성한 영상. 비동기 잡으로 생성되며 상태를 추적한다.
+협주 종료 시 내 영상과 상대 영상을 좌우 분할로 합성한 영상. 비동기 잡으로 생성되며 상태를 추적한다. 내 녹음은 별도 컬럼 없이 `session_id` 로 도출하고(그 세션의 최신 `recordings` 행), `user_id` 는 단건 조회 소유권 가드(`DUE_403_001`), `song_id` 는 곡명 표시에 쓴다. 합성 완료 시각은 별도 컬럼 없이 `updated_at` 으로 충분하다.
 
 **2. 테이블 이름**
-`duet_composites`
+`duet_videos`
 
 **3. 컬럼 명세**
 | Key | Name | Type | Constraint(nullable) | Description | Example |
 |---|---|---|---|---|---|
 | PK | id | BIGINT | NOT NULL, AUTO_INCREMENT | 합성 영상 ID | 5 |
+| FK | user_id | BIGINT | NOT NULL | 소유자(users.id) | 1 |
 | FK | session_id | BIGINT | NOT NULL | 협주 세션(sessions.id) | 12 |
-| FK | my_recording_id | BIGINT | NOT NULL | 내 녹음(recordings.id) | 21 |
+| FK | song_id | BIGINT | NOT NULL | 곡 ID(songs.id) | 1 |
 | FK | partner_recording_id | BIGINT | NOT NULL | 상대 녹음(recordings.id) | 8 |
+| - | status | ENUM('pending','processing','ready','failed') | NOT NULL | 잡 상태 | "ready" |
 | - | composite_video_url | VARCHAR(500) | NULL | 합성 영상 경로(ready 시, `/media/` 상대) | "/media/duet/5.mp4" |
-| - | status | ENUM('pending','processing','ready','failed') | NOT NULL, DEFAULT 'pending' | 잡 상태 | "ready" |
 | - | created_at | DATETIME | NOT NULL | 생성 시각 | "2026-06-02 09:33:01" |
-| - | ready_at | DATETIME | NULL | 합성 완료 시각 | "2026-06-02 09:35:00" |
 | - | updated_at | DATETIME | NOT NULL | 수정 시각 | "2026-06-02 09:35:00" |
 
 **4. Example Row**
 ```json
 {
   "id": 5,
+  "user_id": 1,
   "session_id": 12,
-  "my_recording_id": 21,
+  "song_id": 1,
   "partner_recording_id": 8,
-  "composite_video_url": "/media/duet/5.mp4",
   "status": "ready",
+  "composite_video_url": "/media/duet/5.mp4",
   "created_at": "2026-06-02 09:33:01",
-  "ready_at": "2026-06-02 09:35:00",
   "updated_at": "2026-06-02 09:35:00"
 }
 ```
