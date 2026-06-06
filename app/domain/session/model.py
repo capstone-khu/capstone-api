@@ -1,12 +1,14 @@
 from datetime import datetime
 
 from sqlalchemy import (
+    JSON,
     BigInteger,
     Boolean,
     DateTime,
     Enum,
     ForeignKey,
     String,
+    Text,
     text,
 )
 from sqlalchemy.orm import Mapped, mapped_column
@@ -43,6 +45,17 @@ class Recording(BaseEntity):
     available_for_duet: Mapped[bool] = mapped_column(
         Boolean, server_default=text("1")
     )
+
+
+class AnalysisReport(BaseEntity):
+    __tablename__ = "analysis_reports"
+
+    session_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("sessions.id"), unique=True
+    )
+    headline: Mapped[str] = mapped_column(String(255))
+    coach_comment: Mapped[str] = mapped_column(Text)
+    domains: Mapped[dict] = mapped_column(JSON)
 
 
 class DuetVideo(BaseEntity):

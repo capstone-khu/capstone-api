@@ -9,9 +9,11 @@ from app.common.exception.error_code import ErrorCode
 from app.common.media import save_upload
 from app.domain.agent.realtime import store
 from app.domain.agent.repository import AgentRepository
-from app.domain.session.model import DuetVideo, Recording
+from app.domain.session import coach
+from app.domain.session.model import AnalysisReport, DuetVideo, Recording
 from app.domain.session.repository import SessionRepository
 from app.domain.session.schema import (
+    AnalysisDomains,
     DuetVideoResponse,
     Marking,
     MeasureDetailResponse,
@@ -19,6 +21,7 @@ from app.domain.session.schema import (
     MeasureResult,
     NoteItem,
     PreviousMarkingsResponse,
+    SessionAnalysisResponse,
     SessionCompleteResponse,
     SessionCreateRequest,
     SessionCreateResponse,
@@ -312,6 +315,58 @@ class SessionService:
             notes=notes,
             current_markings=current_markings,
             previous_markings=previous_markings,
+        )
+
+    async def get_session_analysis(
+        self, user_id: int, session_id: int
+    ) -> SessionAnalysisResponse:
+        session = await self.sessions.get_by_id(session_id)
+        if session is None:
+            raise BusinessException(ErrorCode.SESSION_NOT_FOUND)
+        if session.user_id != user_id:
+            raise BusinessException(ErrorCode.FORBIDDEN_SESSION)
+        if session.status != "completed":
+            raise BusinessException(ErrorCode.SESSION_NOT_COMPLETED)
+
+        agent_repo = AgentRepository(self.session)
+        focus_measures = await agent_repo.focus_measures(session_id)
+
+        report = await self.sessions.get_analysis_report(session_id)
+        if report is None:
+            song = await self.songs.get_by_id(session.song_id)
+            events = await agent_repo.events_for_session(session_id)
+            previous = await self.sessions.latest_completed(
+                user_id, session.song_id, session_id
+            )
+            previous_events = (
+                await agent_repo.markings_for_session(previous.id)
+                if previous is not None
+                else []
+            )
+
+            result = await coach.generate(song.title, events, previous_events)
+            if result is None:
+                raise BusinessException(ErrorCode.ANALYSIS_GENERATION_FAILED)
+
+            report = AnalysisReport(
+                session_id=session_id,
+                headline=result.headline,
+                coach_comment=result.coach_comment,
+                domains={
+                    "pitch": result.pitch.model_dump(exclude_none=True),
+                    "rhythm": result.rhythm.model_dump(exclude_none=True),
+                    "posture": result.posture.model_dump(exclude_none=True),
+                },
+            )
+            self.session.add(report)
+            await self.session.commit()
+
+        return SessionAnalysisResponse(
+            session_id=session_id,
+            headline=report.headline,
+            coach_comment=report.coach_comment,
+            domains=AnalysisDomains(**report.domains),
+            focus_measures=focus_measures,
         )
 
     async def abort_session(self, user_id: int, session_id: int) -> None:

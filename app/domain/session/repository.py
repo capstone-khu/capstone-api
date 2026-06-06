@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.session.model import Recording, Session
+from app.domain.session.model import AnalysisReport, Recording, Session
 from app.domain.user.model import User
 
 
@@ -47,6 +47,12 @@ class SessionRepository:
         await self.session.flush()
         await self.session.refresh(entity)
         return entity
+
+    async def get_analysis_report(self, session_id: int) -> AnalysisReport | None:
+        result = await self.session.execute(
+            select(AnalysisReport).where(AnalysisReport.session_id == session_id)
+        )
+        return result.scalars().first()
 
     async def get_recording_with_partner(
         self, recording_id: int

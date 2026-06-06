@@ -29,6 +29,7 @@
 | SES_404_001 | 404 | 존재하지 않는 세션입니다. |
 | SES_409_001 | 409 | 이미 종료된 세션입니다. |
 | SES_409_002 | 409 | 완료되지 않은 세션입니다. |
+| SES_503_001 | 503 | AI 분석 생성에 실패했습니다. 잠시 후 다시 시도해주세요. |
 | REC_404_001 | 404 | 존재하지 않는 녹음입니다. |
 | DUE_403_001 | 403 | 본인의 협주 영상이 아닙니다. |
 | DUE_404_001 | 404 | 존재하지 않는 협주 영상입니다. |
@@ -1412,7 +1413,7 @@ Content-Type: video/webm
 ## 4.7 AI 상세 분석 조회
 
 **1. API 설명**
-세션의 AI 상세 분석(디브리핑 + 영역별 수준·진단·연습)을 조회한다. 없으면 첫 호출에서 `/coach` LLM(OpenAI)으로 **동기 생성**(수 초 블로킹)한 뒤 캐시하며, 이후 같은 세션은 저장본을 반환한다. (백그라운드 잡 아님 — DESIGN #31) 세 영역이 모두 무너진 마디(`focus_measures`)도 함께 반환해 '집중 반복 레슨' 진입에 쓴다(`feedback_events` 에서 도출, 캐시 대상 아님 — DESIGN #28).
+세션의 AI 상세 분석(디브리핑 + 영역별 수준·진단·연습)을 조회한다. 없으면 첫 호출에서 `/coach` LLM(OpenAI)으로 **동기 생성**(수 초 블로킹)한 뒤 캐시하며, 이후 같은 세션은 저장본을 반환한다. (백그라운드 잡 아님 — DESIGN #31) 세 영역이 모두 무너진 마디(`focus_measures`)도 함께 반환해 '집중 반복 레슨' 진입에 쓴다(`feedback_events` 에서 도출, 캐시 대상 아님 — DESIGN #28). **완료(`completed`)된 세션만 조회할 수 있다** — 그 외 상태면 `409`(SES_409_002)를 반환한다. LLM 생성에 실패하면 **저장 없이** `503`(SES_503_001)을 반환하며, 다음 호출에서 다시 생성을 시도한다.
 
 **2. Endpoint + Method**
 `GET /sessions/{session_id}/analysis`
@@ -1501,6 +1502,16 @@ Content-Type: video/webm
   "meta": { "path": "/sessions/999/analysis", "timestamp": 1733132400000 }
 }
 ```
+`409 Conflict` — 완료되지 않은 세션
+```json
+{
+  "success": false,
+  "status": 409,
+  "message": "완료되지 않은 세션입니다.",
+  "code": "SES_409_002",
+  "meta": { "path": "/sessions/12/analysis", "timestamp": 1733132400000 }
+}
+```
 `500 Internal Server Error`
 ```json
 {
@@ -1508,6 +1519,16 @@ Content-Type: video/webm
   "status": 500,
   "message": "서버 내부 오류가 발생했습니다.",
   "code": "COM_500_001",
+  "meta": { "path": "/sessions/12/analysis", "timestamp": 1733132400000 }
+}
+```
+`503 Service Unavailable` — LLM 생성 실패(미저장, 재호출 시 재시도)
+```json
+{
+  "success": false,
+  "status": 503,
+  "message": "AI 분석 생성에 실패했습니다. 잠시 후 다시 시도해주세요.",
+  "code": "SES_503_001",
   "meta": { "path": "/sessions/12/analysis", "timestamp": 1733132400000 }
 }
 ```

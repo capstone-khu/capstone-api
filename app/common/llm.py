@@ -26,6 +26,7 @@ async def structured[T: BaseModel](
     schema: type[T],
     model: str | None = None,
     max_tokens: int = DEFAULT_MAX_TOKENS,
+    timeout: float = TIMEOUT_S,
 ) -> T | None:
 
     if not settings.OPENAI_API_KEY:
@@ -39,7 +40,7 @@ async def structured[T: BaseModel](
                     response_format=schema,
                     max_completion_tokens=max_tokens,
                 ),
-                timeout=TIMEOUT_S,
+                timeout=timeout,
             )
         return completion.choices[0].message.parsed
     except Exception:
