@@ -58,6 +58,7 @@ class HistoryResponse(BaseModel):
                     },
                     {
                         "session_id": 10,
+                        "song_id": 1,
                         "song_title": "반짝 반짝 작은별",
                         "played_at": "2026-06-01T18:10:00+09:00",
                         "mode": "solo",

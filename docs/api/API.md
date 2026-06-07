@@ -314,6 +314,7 @@
 | total | number | Y | 전체 이력 수 | 7 |
 | items | array | Y | 이력 목록 | [] |
 | items[].session_id | number | Y | 세션 ID | 12 |
+| items[].song_id | number | Y | 곡 ID | 1 |
 | items[].song_title | string | Y | 곡명 | "반짝 반짝 작은별" |
 | items[].played_at | string(datetime) | Y | 연주 시각 | "2026-06-02T09:30:00+09:00" |
 | items[].mode | string | Y | 모드(solo/duet) | "duet" |
@@ -334,9 +335,9 @@
   "data": {
     "page": 1, "size": 3, "total": 7,
     "items": [
-      { "session_id": 12, "song_title": "반짝 반짝 작은별", "played_at": "2026-06-02T09:30:00+09:00",
+      { "session_id": 12, "song_id": 1, "song_title": "반짝 반짝 작은별", "played_at": "2026-06-02T09:30:00+09:00",
         "mode": "duet", "stats": { "pitch": 3, "rhythm": 1, "posture": 2 }, "focus_measures": [5, 7], "duet_composite_id": 5, "partner_name": "이준호" },
-      { "session_id": 10, "song_title": "반짝 반짝 작은별", "played_at": "2026-06-01T18:10:00+09:00",
+      { "session_id": 10, "song_id": 1, "song_title": "반짝 반짝 작은별", "played_at": "2026-06-01T18:10:00+09:00",
         "mode": "solo", "stats": { "pitch": 0, "rhythm": 2, "posture": 1 }, "focus_measures": [] }
     ]
   }
