@@ -28,6 +28,7 @@ class UserService:
         items = [
             HistoryItem(
                 session_id=session.id,
+                song_id=session.song_id,
                 song_title=song_title,
                 played_at=session.ended_at,
                 mode=session.mode,

@@ -27,6 +27,7 @@ class HistoryStats(BaseModel):
 
 class HistoryItem(BaseModel):
     session_id: int
+    song_id: int
     song_title: str
     played_at: KSTDateTime
     mode: str
@@ -46,6 +47,7 @@ class HistoryResponse(BaseModel):
                 "items": [
                     {
                         "session_id": 12,
+                        "song_id": 1,
                         "song_title": "반짝 반짝 작은별",
                         "played_at": "2026-06-02T09:30:00+09:00",
                         "mode": "duet",
