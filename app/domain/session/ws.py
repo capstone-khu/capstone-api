@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import time
 from concurrent.futures import ThreadPoolExecutor
 
 import jwt
@@ -97,6 +98,7 @@ async def _loop(
     tasks: set[asyncio.Task],
 ) -> None:
     loop = asyncio.get_event_loop()
+    prev_measure_at: float | None = None
     while True:
         message = await websocket.receive()
         if message["type"] == "websocket.disconnect":
@@ -115,9 +117,14 @@ async def _loop(
         data = json.loads(text)
         if data.get("type") == "measure":
             measure_index = int(data["measure_index"])
+            recv_at = time.perf_counter()
+            gap_ms = (recv_at - prev_measure_at) * 1000 if prev_measure_at else 0.0
+            prev_measure_at = recv_at
+
             outputs = await loop.run_in_executor(
                 executor, live.score_measure, measure_index
             )
+            scored_at = time.perf_counter()
             async with send_lock:
                 await websocket.send_json(
                     {
@@ -126,6 +133,15 @@ async def _loop(
                         "items": _items(outputs),
                     }
                 )
+            sent_at = time.perf_counter()
+            logger.info(
+                "WS measure=%d gap=%.0fms score=%.0fms send=%.0fms total=%.0fms",
+                measure_index,
+                gap_ms,
+                (scored_at - recv_at) * 1000,
+                (sent_at - scored_at) * 1000,
+                (sent_at - recv_at) * 1000,
+            )
             _spawn_resolvers(websocket, live, outputs, send_lock, tasks)
 
 
