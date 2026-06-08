@@ -858,19 +858,37 @@
 |---|---|---|---|---|
 | Authorization | string | N | Bearer 액세스 토큰(쿼리 token 미사용 시) | Bearer eyJhbGciOi... |
 
-**6. Request Body** (client → server 메시지, 마디마다)
-측정 입력을 보낸다. 오디오·프레임 바이트는 별도 바이너리 프레임으로 스트리밍하고, 아래 JSON 메시지로 마디 경계를 알린다(정확한 바이너리 프레이밍은 구현 시 확정). state는 백엔드가 측정해 만든다.
+**6. Request Body** (client → server 메시지)
+측정 입력을 두 종류로 보낸다. 오디오·영상 바이트는 **바이너리 프레임**으로 계속 스트리밍하고, 한 마디가 끝날 때마다 **measure JSON 메시지**로 마디 경계를 알린다. state·분석은 백엔드가 측정해 만든다.
+
+**바이너리 프레임** (오디오·영상) — `[ kind(1) | ts_ms(4) | payload ]`
+
+| 필드 | 크기 | 설명 |
+|---|---|---|
+| kind | 1 byte | `0x01`=오디오, `0x02`=영상 |
+| ts_ms | 4 byte | 카운트인 종료(t0) 기준 경과 시간(ms), uint32 **big-endian**. 단조 증가해야 하며 역행·동일 값 프레임은 폐기될 수 있다 |
+| payload | N byte | 오디오=PCM16 LE (48kHz mono, 100ms=4,800샘플·9,600byte 단위) · 영상=JPEG (10~15fps) |
+
+> 마디 ↔ 오디오/영상 매칭은 별도 식별자 없이 각 프레임의 `ts_ms` 로 처리한다.
+
+**measure 메시지** (마디 경계, JSON)
 
 | Name | Type | Required | Description | Example |
 |---|---|---|---|---|
 | type | string | Y | 메시지 타입 | "measure" |
-| measure_index | number | Y | 현재 마디 | 12 |
-| audio_ref | string | N | 직전 바이너리 오디오 청크 식별자 | "chunk-12" |
-| frame_ref | string | N | 직전 바이너리 영상 프레임 식별자 | "frame-12" |
+| measure_index | number | Y | 현재 마디 (**1-based**, 곡 악보 마디 번호와 일치) | 12 |
 
-**7. Request Example (JSON)**
+> 한 마디의 오디오·영상 프레임을 **모두 보낸 뒤** measure 메시지를 보낸다. 순서가 뒤집히면 그 마디 구간이 비어 분석이 누락된다.
+
+**7. Request Example**
+바이너리 프레임:
+```
+[ 0x01 | ts_ms(uint32 BE) | PCM16 bytes ]   # 오디오 100ms
+[ 0x02 | ts_ms(uint32 BE) | JPEG bytes  ]   # 영상 프레임
+```
+measure 메시지(JSON):
 ```json
-{ "type": "measure", "measure_index": 12, "audio_ref": "chunk-12", "frame_ref": "frame-12" }
+{ "type": "measure", "measure_index": 12 }
 ```
 
 **8. Response Body** (server → client 메시지)
