@@ -23,13 +23,20 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    _configure_logging()
     sync_seed_media()
     asyncio.create_task(_warmup())
     yield
 
 
+def _configure_logging() -> None:
+    app_logger = logging.getLogger("app")
+    app_logger.handlers = logging.getLogger("uvicorn").handlers
+    app_logger.setLevel(logging.INFO)
+    app_logger.propagate = False
+
+
 async def _warmup() -> None:
-    """부팅 직후 실시간 측정 스택을 백그라운드로 워밍업 한다(서빙 차단 안 함)."""
     try:
         await asyncio.get_event_loop().run_in_executor(None, warm_blocking)
     except Exception:
