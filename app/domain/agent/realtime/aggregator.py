@@ -1,4 +1,4 @@
-from app.domain.agent.pitch.measurer import SAMPLE_RATE, PitchMeasurer
+from app.domain.agent.pitch.measurer import SAMPLE_RATE, PitchMeasurer, get_swift_f0
 from app.domain.agent.posture.measurer import PoseMeasurer, PostureSpec
 from app.domain.agent.posture.policy import classify_posture
 from app.domain.agent.rhythm.measurer import RhythmMeasurer, RhythmSpec
@@ -47,7 +47,6 @@ class PitchAggregator:
         self.windows = {m: (s, e) for m, s, e in windows}
         self.measurer = PitchMeasurer()
         self.buffer = _AudioBuffer()
-        self._model = None
 
     def feed(self, ts_ms: int, payload: bytes) -> None:
         self.buffer.feed(ts_ms, payload)
@@ -57,12 +56,8 @@ class PitchAggregator:
         seg = self.buffer.segment(start, end, SAMPLE_RATE)
         if seg is None or len(seg) == 0:
             return _invalid(measure_index)
-        if self._model is None:
-            from swift_f0 import core
-
-            self._model = core.SwiftF0()
         return self.measurer.reading_for_window(
-            seg, start, self.score, measure_index, self._model
+            seg, start, self.score, measure_index, get_swift_f0()
         )
 
 
@@ -147,6 +142,9 @@ class PostureAggregator:
             self._landmarker.close()
             self._landmarker = None
 
+    def prepare(self) -> None:
+        self._ensure()
+
     def _ensure(self) -> None:
         if self._landmarker is not None:
             return
@@ -167,6 +165,8 @@ class PostureAggregator:
 
 async def build_live_session(db, session_obj):
     """세션 정보로 3 도메인 집계기·엔진(Q 메모리 로드)을 구성한다."""
+    import asyncio
+
     from app.domain.agent.pitch.policy import PitchPolicy
     from app.domain.agent.posture.policy import PosturePolicy
     from app.domain.agent.qlearning import QLearningEngine
@@ -204,10 +204,12 @@ async def build_live_session(db, session_obj):
         Domain.RHYTHM: QLearningEngine(RhythmPolicy(), slice_q(Domain.RHYTHM)),
         Domain.POSTURE: QLearningEngine(PosturePolicy(), slice_q(Domain.POSTURE)),
     }
+    posture = PostureAggregator(posture_spec)
+    await asyncio.get_event_loop().run_in_executor(None, posture.prepare)
     aggregators = {
         Domain.PITCH: PitchAggregator(score, windows),
         Domain.RHYTHM: RhythmAggregator(rhythm_spec, windows),
-        Domain.POSTURE: PostureAggregator(posture_spec),
+        Domain.POSTURE: posture,
     }
     return LiveSession(
         session_id=session_obj.id,
