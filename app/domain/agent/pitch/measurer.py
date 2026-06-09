@@ -8,6 +8,17 @@ FRAME_SIZE = SAMPLE_RATE * FRAME_MS // 1000
 CONF_THRESHOLD = 0.5
 MIN_VALID_FRAMES = 5
 
+_swift_f0_model = None
+
+
+def get_swift_f0():
+    global _swift_f0_model
+    if _swift_f0_model is None:
+        from swift_f0 import core
+
+        _swift_f0_model = core.SwiftF0()
+    return _swift_f0_model
+
 
 class PitchMeasurer:
     """녹음 오디오 + 시간축 score → 마디별 음정 측정(MeasureReading).

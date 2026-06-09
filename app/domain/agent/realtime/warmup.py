@@ -12,12 +12,13 @@ def warm_blocking() -> None:
     import numpy as np
 
     try:
-        import noisereduce  # noqa: F401
-        from swift_f0 import core
+        import noisereduce as nr
 
-        core.SwiftF0().detect_from_array(
-            np.zeros(4096, dtype=np.float32), sample_rate=48000
-        )
+        from app.domain.agent.pitch.measurer import get_swift_f0
+
+        dummy = np.zeros(4096, dtype=np.float32)
+        get_swift_f0().detect_from_array(dummy, sample_rate=48000)
+        nr.reduce_noise(y=dummy, sr=48000, prop_decrease=0.9, stationary=True)
     except Exception as exc:
         logger.warning("음정 워밍업 skip: %s", exc)
 
