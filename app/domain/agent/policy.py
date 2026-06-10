@@ -11,6 +11,18 @@ REWARD_SUPERVISOR_MISS = -0.5
 
 DELEGATION_SUFFIX = "-00"
 
+ANALYSIS_FAILED_ACTIONS = {
+    Domain.PITCH: ActionSpec(
+        action_id="PT-99", action="ANALYSIS_FAILED", feedback="분석에 실패했어요"
+    ),
+    Domain.RHYTHM: ActionSpec(
+        action_id="RH-99", action="ANALYSIS_FAILED", feedback="분석에 실패했어요"
+    ),
+    Domain.POSTURE: ActionSpec(
+        action_id="PS-99", action="ANALYSIS_FAILED", feedback="분석에 실패했어요"
+    ),
+}
+
 
 class Policy(Protocol):
     domain: Domain
