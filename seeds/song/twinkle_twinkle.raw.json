@@ -11,9 +11,10 @@
       "hz": 293.66,
       "hz_exact": 293.66,
       "start": 0.95,
-      "end": 1.9,
-      "duration": 0.95,
-      "measure": 1
+      "end": 1.65,
+      "duration": 0.7,
+      "measure": 1,
+      "note_count": 1
     },
     {
       "index": 1,
@@ -21,10 +22,11 @@
       "midi": 62,
       "hz": 293.66,
       "hz_exact": 293.66,
-      "start": 1.9,
-      "end": 2.55,
-      "duration": 0.65,
-      "measure": 1
+      "start": 1.65,
+      "end": 2.35,
+      "duration": 0.7,
+      "measure": 1,
+      "note_count": 1
     },
     {
       "index": 2,
@@ -32,10 +34,11 @@
       "midi": 69,
       "hz": 440.0,
       "hz_exact": 440.0,
-      "start": 2.55,
-      "end": 3.45,
-      "duration": 0.9,
-      "measure": 1
+      "start": 2.35,
+      "end": 3.05,
+      "duration": 0.7,
+      "measure": 1,
+      "note_count": 1
     },
     {
       "index": 3,
@@ -43,10 +46,11 @@
       "midi": 69,
       "hz": 440.0,
       "hz_exact": 440.0,
-      "start": 3.45,
-      "end": 3.85,
-      "duration": 0.4,
-      "measure": 1
+      "start": 3.05,
+      "end": 3.75,
+      "duration": 0.7,
+      "measure": 1,
+      "note_count": 1
     },
     {
       "index": 4,
@@ -54,10 +58,11 @@
       "midi": 71,
       "hz": 493.88,
       "hz_exact": 493.88,
-      "start": 3.85,
-      "end": 4.55,
+      "start": 3.75,
+      "end": 4.45,
       "duration": 0.7,
-      "measure": 2
+      "measure": 2,
+      "note_count": 1
     },
     {
       "index": 5,
@@ -65,10 +70,11 @@
       "midi": 71,
       "hz": 493.88,
       "hz_exact": 493.88,
-      "start": 4.55,
-      "end": 5.0,
-      "duration": 0.45,
-      "measure": 2
+      "start": 4.45,
+      "end": 5.15,
+      "duration": 0.7,
+      "measure": 2,
+      "note_count": 1
     },
     {
       "index": 6,
@@ -76,10 +82,11 @@
       "midi": 69,
       "hz": 440.0,
       "hz_exact": 440.0,
-      "start": 5.0,
-      "end": 6.05,
-      "duration": 1.05,
-      "measure": 2
+      "start": 5.15,
+      "end": 6.55,
+      "duration": 1.4,
+      "measure": 2,
+      "note_count": 2
     },
     {
       "index": 7,
@@ -87,10 +94,11 @@
       "midi": 67,
       "hz": 392.0,
       "hz_exact": 392.0,
-      "start": 6.3,
-      "end": 7.0,
+      "start": 6.55,
+      "end": 7.25,
       "duration": 0.7,
-      "measure": 3
+      "measure": 3,
+      "note_count": 1
     },
     {
       "index": 8,
@@ -98,10 +106,11 @@
       "midi": 67,
       "hz": 392.0,
       "hz_exact": 392.0,
-      "start": 7.0,
-      "end": 7.5,
-      "duration": 0.5,
-      "measure": 3
+      "start": 7.25,
+      "end": 7.95,
+      "duration": 0.7,
+      "measure": 3,
+      "note_count": 1
     },
     {
       "index": 9,
@@ -109,10 +118,11 @@
       "midi": 66,
       "hz": 369.99,
       "hz_exact": 369.99,
-      "start": 7.5,
-      "end": 8.1,
-      "duration": 0.6,
-      "measure": 3
+      "start": 7.95,
+      "end": 8.65,
+      "duration": 0.7,
+      "measure": 3,
+      "note_count": 1
     },
     {
       "index": 10,
@@ -120,10 +130,11 @@
       "midi": 66,
       "hz": 369.99,
       "hz_exact": 369.99,
-      "start": 8.1,
-      "end": 8.95,
-      "duration": 0.85,
-      "measure": 3
+      "start": 8.65,
+      "end": 9.35,
+      "duration": 0.7,
+      "measure": 3,
+      "note_count": 1
     },
     {
       "index": 11,
@@ -131,10 +142,11 @@
       "midi": 64,
       "hz": 329.63,
       "hz_exact": 329.63,
-      "start": 8.95,
-      "end": 9.5,
-      "duration": 0.55,
-      "measure": 4
+      "start": 9.35,
+      "end": 10.05,
+      "duration": 0.7,
+      "measure": 4,
+      "note_count": 1
     },
     {
       "index": 12,
@@ -142,10 +154,11 @@
       "midi": 64,
       "hz": 329.63,
       "hz_exact": 329.63,
-      "start": 9.5,
-      "end": 10.05,
-      "duration": 0.55,
-      "measure": 4
+      "start": 10.05,
+      "end": 10.75,
+      "duration": 0.7,
+      "measure": 4,
+      "note_count": 1
     },
     {
       "index": 13,
@@ -153,10 +166,11 @@
       "midi": 62,
       "hz": 293.66,
       "hz_exact": 293.66,
-      "start": 10.05,
-      "end": 11.25,
-      "duration": 1.2,
-      "measure": 4
+      "start": 10.75,
+      "end": 12.15,
+      "duration": 1.4,
+      "measure": 4,
+      "note_count": 2
     },
     {
       "index": 14,
@@ -164,10 +178,11 @@
       "midi": 69,
       "hz": 440.0,
       "hz_exact": 440.0,
-      "start": 11.5,
-      "end": 12.2,
+      "start": 12.15,
+      "end": 12.85,
       "duration": 0.7,
-      "measure": 5
+      "measure": 5,
+      "note_count": 1
     },
     {
       "index": 15,
@@ -175,10 +190,11 @@
       "midi": 69,
       "hz": 440.0,
       "hz_exact": 440.0,
-      "start": 12.2,
-      "end": 12.7,
-      "duration": 0.5,
-      "measure": 5
+      "start": 12.85,
+      "end": 13.55,
+      "duration": 0.7,
+      "measure": 5,
+      "note_count": 1
     },
     {
       "index": 16,
@@ -186,10 +202,11 @@
       "midi": 67,
       "hz": 392.0,
       "hz_exact": 392.0,
-      "start": 12.7,
-      "end": 13.45,
-      "duration": 0.75,
-      "measure": 5
+      "start": 13.55,
+      "end": 14.25,
+      "duration": 0.7,
+      "measure": 5,
+      "note_count": 1
     },
     {
       "index": 17,
@@ -197,10 +214,11 @@
       "midi": 67,
       "hz": 392.0,
       "hz_exact": 392.0,
-      "start": 13.45,
-      "end": 13.95,
-      "duration": 0.5,
-      "measure": 5
+      "start": 14.25,
+      "end": 14.95,
+      "duration": 0.7,
+      "measure": 5,
+      "note_count": 1
     },
     {
       "index": 18,
@@ -208,10 +226,11 @@
       "midi": 66,
       "hz": 369.99,
       "hz_exact": 369.99,
-      "start": 13.95,
-      "end": 14.75,
-      "duration": 0.8,
-      "measure": 6
+      "start": 14.95,
+      "end": 15.65,
+      "duration": 0.7,
+      "measure": 6,
+      "note_count": 1
     },
     {
       "index": 19,
@@ -219,10 +238,11 @@
       "midi": 66,
       "hz": 369.99,
       "hz_exact": 369.99,
-      "start": 14.75,
-      "end": 15.4,
-      "duration": 0.65,
-      "measure": 6
+      "start": 15.65,
+      "end": 16.35,
+      "duration": 0.7,
+      "measure": 6,
+      "note_count": 1
     },
     {
       "index": 20,
@@ -230,10 +250,11 @@
       "midi": 64,
       "hz": 329.63,
       "hz_exact": 329.63,
-      "start": 15.4,
-      "end": 16.6,
-      "duration": 1.2,
-      "measure": 6
+      "start": 16.35,
+      "end": 17.75,
+      "duration": 1.4,
+      "measure": 6,
+      "note_count": 2
     },
     {
       "index": 21,
@@ -241,10 +262,11 @@
       "midi": 69,
       "hz": 440.0,
       "hz_exact": 440.0,
-      "start": 17.15,
-      "end": 17.8,
-      "duration": 0.65,
-      "measure": 7
+      "start": 17.75,
+      "end": 18.45,
+      "duration": 0.7,
+      "measure": 7,
+      "note_count": 1
     },
     {
       "index": 22,
@@ -252,10 +274,11 @@
       "midi": 69,
       "hz": 440.0,
       "hz_exact": 440.0,
-      "start": 17.8,
-      "end": 18.05,
-      "duration": 0.25,
-      "measure": 7
+      "start": 18.45,
+      "end": 19.15,
+      "duration": 0.7,
+      "measure": 7,
+      "note_count": 1
     },
     {
       "index": 23,
@@ -263,10 +286,11 @@
       "midi": 67,
       "hz": 392.0,
       "hz_exact": 392.0,
-      "start": 18.3,
-      "end": 18.9,
-      "duration": 0.6,
-      "measure": 7
+      "start": 19.15,
+      "end": 19.85,
+      "duration": 0.7,
+      "measure": 7,
+      "note_count": 1
     },
     {
       "index": 24,
@@ -274,10 +298,11 @@
       "midi": 67,
       "hz": 392.0,
       "hz_exact": 392.0,
-      "start": 18.9,
-      "end": 19.1,
-      "duration": 0.2,
-      "measure": 7
+      "start": 19.85,
+      "end": 20.55,
+      "duration": 0.7,
+      "measure": 7,
+      "note_count": 1
     },
     {
       "index": 25,
@@ -285,10 +310,11 @@
       "midi": 66,
       "hz": 369.99,
       "hz_exact": 369.99,
-      "start": 19.1,
-      "end": 19.9,
-      "duration": 0.8,
-      "measure": 8
+      "start": 20.55,
+      "end": 21.25,
+      "duration": 0.7,
+      "measure": 8,
+      "note_count": 1
     },
     {
       "index": 26,
@@ -296,10 +322,11 @@
       "midi": 66,
       "hz": 369.99,
       "hz_exact": 369.99,
-      "start": 19.9,
-      "end": 20.4,
-      "duration": 0.5,
-      "measure": 8
+      "start": 21.25,
+      "end": 21.95,
+      "duration": 0.7,
+      "measure": 8,
+      "note_count": 1
     },
     {
       "index": 27,
@@ -307,10 +334,11 @@
       "midi": 64,
       "hz": 329.63,
       "hz_exact": 329.63,
-      "start": 20.4,
-      "end": 21.55,
-      "duration": 1.15,
-      "measure": 8
+      "start": 21.95,
+      "end": 23.35,
+      "duration": 1.4,
+      "measure": 8,
+      "note_count": 2
     },
     {
       "index": 28,
@@ -318,10 +346,11 @@
       "midi": 62,
       "hz": 293.66,
       "hz_exact": 293.66,
-      "start": 21.6,
-      "end": 22.45,
-      "duration": 0.85,
-      "measure": 9
+      "start": 23.35,
+      "end": 24.05,
+      "duration": 0.7,
+      "measure": 9,
+      "note_count": 1
     },
     {
       "index": 29,
@@ -329,10 +358,11 @@
       "midi": 62,
       "hz": 293.66,
       "hz_exact": 293.66,
-      "start": 22.45,
-      "end": 23.0,
-      "duration": 0.55,
-      "measure": 9
+      "start": 24.05,
+      "end": 24.75,
+      "duration": 0.7,
+      "measure": 9,
+      "note_count": 1
     },
     {
       "index": 30,
@@ -340,10 +370,11 @@
       "midi": 69,
       "hz": 440.0,
       "hz_exact": 440.0,
-      "start": 23.0,
-      "end": 23.9,
-      "duration": 0.9,
-      "measure": 9
+      "start": 24.75,
+      "end": 25.45,
+      "duration": 0.7,
+      "measure": 9,
+      "note_count": 1
     },
     {
       "index": 31,
@@ -351,10 +382,11 @@
       "midi": 69,
       "hz": 440.0,
       "hz_exact": 440.0,
-      "start": 23.9,
-      "end": 24.1,
-      "duration": 0.2,
-      "measure": 9
+      "start": 25.45,
+      "end": 26.15,
+      "duration": 0.7,
+      "measure": 9,
+      "note_count": 1
     },
     {
       "index": 32,
@@ -362,10 +394,11 @@
       "midi": 71,
       "hz": 493.88,
       "hz_exact": 493.88,
-      "start": 24.1,
-      "end": 25.0,
-      "duration": 0.9,
-      "measure": 10
+      "start": 26.15,
+      "end": 26.85,
+      "duration": 0.7,
+      "measure": 10,
+      "note_count": 1
     },
     {
       "index": 33,
@@ -373,10 +406,11 @@
       "midi": 71,
       "hz": 493.88,
       "hz_exact": 493.88,
-      "start": 25.0,
-      "end": 25.4,
-      "duration": 0.4,
-      "measure": 10
+      "start": 26.85,
+      "end": 27.55,
+      "duration": 0.7,
+      "measure": 10,
+      "note_count": 1
     },
     {
       "index": 34,
@@ -384,10 +418,11 @@
       "midi": 69,
       "hz": 440.0,
       "hz_exact": 440.0,
-      "start": 25.4,
-      "end": 26.2,
-      "duration": 0.8,
-      "measure": 10
+      "start": 27.55,
+      "end": 28.25,
+      "duration": 1.4,
+      "measure": 10,
+      "note_count": 2
     },
     {
       "index": 35,
@@ -395,10 +430,11 @@
       "midi": 67,
       "hz": 392.0,
       "hz_exact": 392.0,
-      "start": 26.75,
-      "end": 27.4,
-      "duration": 0.65,
-      "measure": 11
+      "start": 28.25,
+      "end": 28.95,
+      "duration": 0.7,
+      "measure": 11,
+      "note_count": 1
     },
     {
       "index": 36,
@@ -406,10 +442,11 @@
       "midi": 67,
       "hz": 392.0,
       "hz_exact": 392.0,
-      "start": 27.4,
-      "end": 27.85,
-      "duration": 0.45,
-      "measure": 11
+      "start": 28.95,
+      "end": 29.65,
+      "duration": 0.7,
+      "measure": 11,
+      "note_count": 1
     },
     {
       "index": 37,
@@ -417,10 +454,11 @@
       "midi": 66,
       "hz": 369.99,
       "hz_exact": 369.99,
-      "start": 27.85,
-      "end": 28.5,
-      "duration": 0.65,
-      "measure": 11
+      "start": 29.65,
+      "end": 30.35,
+      "duration": 0.7,
+      "measure": 11,
+      "note_count": 1
     },
     {
       "index": 38,
@@ -428,10 +466,11 @@
       "midi": 66,
       "hz": 369.99,
       "hz_exact": 369.99,
-      "start": 28.5,
-      "end": 29.1,
-      "duration": 0.6,
-      "measure": 11
+      "start": 30.35,
+      "end": 31.05,
+      "duration": 0.7,
+      "measure": 11,
+      "note_count": 1
     },
     {
       "index": 39,
@@ -439,10 +478,11 @@
       "midi": 64,
       "hz": 329.63,
       "hz_exact": 329.63,
-      "start": 29.35,
-      "end": 29.75,
-      "duration": 0.4,
-      "measure": 12
+      "start": 31.05,
+      "end": 31.75,
+      "duration": 0.7,
+      "measure": 12,
+      "note_count": 1
     },
     {
       "index": 40,
@@ -450,10 +490,11 @@
       "midi": 64,
       "hz": 329.63,
       "hz_exact": 329.63,
-      "start": 29.75,
-      "end": 30.65,
-      "duration": 0.9,
-      "measure": 12
+      "start": 31.75,
+      "end": 32.45,
+      "duration": 0.7,
+      "measure": 12,
+      "note_count": 1
     },
     {
       "index": 41,
@@ -461,10 +502,11 @@
       "midi": 62,
       "hz": 293.66,
       "hz_exact": 293.66,
-      "start": 30.65,
-      "end": 33.0,
-      "duration": 1.9,
-      "measure": 12
+      "start": 32.45,
+      "end": 33.85,
+      "duration": 1.4,
+      "measure": 12,
+      "note_count": 2
     }
   ]
 }
