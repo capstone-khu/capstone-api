@@ -3,8 +3,8 @@
 녹음 파일을 마디별로 채점해 DB에 저장하는 과정을 세 단계로 나눠 점검한다.
 
 - 엔진: 정해둔 입력으로 state·action·reward·Q 확인. (오디오·DB 불필요)
-- 측정: 합성 비트로 그리드 로직(정확→GOOD, 어긋남→비-GOOD),
-        실제 연주는 결정론·12마디 확인. (audio 그룹 필요)
+- 측정: 합성 onset 으로 앵커 매칭 로직(정확→GOOD, 어긋남→비-GOOD),
+        기준 음원은 GOOD 최빈·결정론·12마디 확인. (audio 그룹 필요)
 - 적재: 시드 세션으로 돌려 feedback_events·q_table_entries 확인. (로컬 MySQL 필요)
 
 실행: uv run --group audio python scripts/verify_rhythm_batch.py
@@ -64,34 +64,57 @@ def layer2_measurement() -> bool | None:
         print(f"  [skip] audio deps 미설치: {exc}")
         return None
 
-    from app.domain.agent.rhythm.measurer import RhythmMeasurer, RhythmSpec
+    import numpy as np
 
-    spec = RhythmSpec(bpm=96, beats_per_measure=4, total_measures=12)
+    from app.domain.agent.rhythm.measurer import (
+        OnsetEnvelope,
+        RhythmMeasurer,
+        RhythmSpec,
+    )
+
+    spec = RhythmSpec.load(SONG_ID)
     measurer = RhythmMeasurer()
+    anchor_times = sorted(a.time for v in spec.anchors.values() for a in v)
     ok = True
 
-    interval = 60.0 / spec.bpm
-    n = spec.total_measures * spec.beats_per_measure
-    exact = _dist(measurer.readings_from_beats([i * interval for i in range(n)], spec))
+    def synthetic_env(onset_times: list[float]) -> OnsetEnvelope:
+        step = 0.016
+        grid = np.arange(0.0, max(onset_times) + 1.0, step)
+        strengths = np.zeros(len(grid))
+        for t in onset_times:
+            strengths[int(round(t / step))] = 1.0
+        return OnsetEnvelope(grid, strengths)
+
+    def readings_for(onset_times: list[float]):
+        env = synthetic_env(onset_times)
+        return measurer.readings(env, spec, measurer.global_offset(env, spec))
+
+    exact = _dist(readings_for(anchor_times))
     exact_good = bool(exact) and exact.most_common(1)[0][0] == "GOOD"
     ok &= exact_good
-    print(f"  합성 정확한 박: {dict(exact)}  GOOD 최빈={'OK' if exact_good else 'X'}")
+    print(f"  합성 정확 onset: {dict(exact)}  GOOD 최빈={'OK' if exact_good else 'X'}")
 
-    fast = _dist(measurer.readings_from_beats([i * 0.50 for i in range(n + 12)], spec))
-    fast_off = bool(fast) and fast.get("GOOD", 0) < sum(
-        v for k, v in fast.items() if k != "GOOD"
+    stretched = [t * 1.05 for t in anchor_times]
+    off = _dist(readings_for(stretched))
+    off_bad = bool(off) and off.get("GOOD", 0) < sum(
+        v for k, v in off.items() if k != "GOOD"
     )
-    ok &= fast_off
-    print(f"  합성 어긋난 박: {dict(fast)}  비-GOOD 우세={'OK' if fast_off else 'X'}")
+    ok &= off_bad
+    print(f"  합성 어긋난 onset(템포 5%): {dict(off)}  비-GOOD 우세={'OK' if off_bad else 'X'}")
 
     if Path(REFERENCE).exists():
         a = measurer.measure(REFERENCE, spec)
         b = measurer.measure(REFERENCE, spec)
         same = [r.state for r in a] == [r.state for r in b]
         valid12 = len(a) == 12 and all(r.valid for r in a)
-        ok &= same and valid12
-        mark = "OK" if (same and valid12) else "FAIL"
-        print(f"  기준: 12마디={valid12} 결정론={same} {dict(_dist(a))}  {mark}")
+        dist = _dist(a)
+        ref_good = bool(dist) and dist.most_common(1)[0][0] == "GOOD"
+        ok &= same and valid12 and ref_good
+        mark = "OK" if (same and valid12 and ref_good) else "FAIL"
+        print(
+            f"  기준: 12마디={valid12} 결정론={same} GOOD 최빈={ref_good} "
+            f"{dict(dist)}  {mark}"
+        )
 
     return ok
 
