@@ -896,9 +896,9 @@ measure 메시지(JSON):
 |---|---|---|---|---|
 | type | string | Y | 메시지 타입(`feedback` / `feedback_update`) | "feedback" |
 | measure_index | number | Y | 현재 마디 | 12 |
-| items | array | Y | 도메인별 피드백(reward 낮은 영역 먼저, 동률 자세 우선) | [] |
+| items | array | Y | 도메인별 피드백 — **항상 세 도메인(pitch/rhythm/posture) 포함**. 측정된 영역은 reward 낮은 순(동률 자세 우선), 측정 불가 영역은 분석 실패 item으로 맨 뒤에 붙는다 | [] |
 | items[].domain | string | Y | 영역(pitch/rhythm/posture) | "pitch" |
-| items[].action_id | string | Y | 액션 ID. `-00`=위임(원인 분석) · `-01`=POSITIVE(GOOD 격려) · `-02+`=교정 | "PT-03" |
+| items[].action_id | string | Y | 액션 ID. `-00`=위임(원인 분석) · `-01`=POSITIVE(GOOD 격려) · `-02+`=교정 · `-99`=분석 실패(측정 불가) | "PT-03" |
 | items[].action | string | Y | 액션명 | "PITCH_DOWN" |
 | items[].feedback | string | Y | 피드백 문구(위임 시 원인 설명, 분석 중이면 "원인 분석 중") | "음정을 내리세요" |
 | items[].cause | object | N | 위임(`-00`) 시 원인 분석 정보. 없으면 생략 | null |
@@ -906,6 +906,7 @@ measure 메시지(JSON):
 | items[].cause.domain | string | N | 지목된 원인 영역(pitch/rhythm/posture). 막힌 도메인 자신(self)일 수 있음. pending 중엔 없음 | "rhythm" |
 
 > GOOD 도메인은 `action_id=-01`(POSITIVE) item으로 실시간 격려를 보낸다(WS 전달 + `feedback_events` 에도 기록 — DESIGN #25).
+> 측정이 무효인 도메인(프레임 부족 등)은 빼지 않고 `-99`(`ANALYSIS_FAILED`, `feedback`="분석에 실패했어요") item으로 채워 보낸다. 이 item은 **WS 전달 전용**이다 — Q 갱신·`feedback_events` 기록·결과 마킹에 포함되지 않는다.
 > 위임(`-00`) 마디에선 막힌 도메인 item을 **삭제하지 않고** 그 슬롯에 원인 설명을 담는다(DESIGN #21). 위임은 **모두 LLM 원인 분석**을 거친다(단일 경로): 먼저 `cause.pending=true`(`feedback`="원인 분석 중")로 보낸 뒤 LLM 결과가 오면 `feedback_update` 메시지로 그 item을 교체한다. 비-GOOD 동료가 있으면 그 동료 또는 막힌 도메인 자신이 원인으로 지목될 수 있고, **동료가 모두 GOOD이면 외부 원인이 없으므로 `cause.domain`은 막힌 도메인 자신(self)으로 고정**된다(LLM은 설명 텍스트만 생성). 나머지 도메인은 각자 item(GOOD→POSITIVE, 비-GOOD→교정)을 그대로 보낸다.
 > `feedback_update`(server→client) 메시지: `{ "type": "feedback_update", "measure_index": <n>, "item": { ...교체할 도메인 item... } }`. 같은 `measure_index`·`item.domain`의 기존 item을 교체한다(비동기 LLM 원인 분석 결과 도착 시).
 
@@ -943,6 +944,19 @@ measure 메시지(JSON):
     { "domain": "pitch", "action_id": "PT-01", "action": "POSITIVE_PITCH", "feedback": "잘 하고 있습니다. 계속 유지하세요" },
     { "domain": "rhythm", "action_id": "RH-01", "action": "POSITIVE_RHYTHM", "feedback": "잘 하고 있습니다. 계속 유지하세요" },
     { "domain": "posture", "action_id": "PS-01", "action": "POSITIVE_POSTURE", "feedback": "잘 하고 있습니다. 계속 유지하세요" }
+  ]
+}
+```
+
+측정 불가 (영상 프레임 부족으로 자세 측정 실패 → 자세 슬롯은 분석 실패 item):
+```json
+{
+  "type": "feedback",
+  "measure_index": 5,
+  "items": [
+    { "domain": "rhythm", "action_id": "RH-03", "action": "RHYTHM_CATCH_UP", "feedback": "박자보다 늦게 연주하고 있습니다. 박자를 맞추세요" },
+    { "domain": "pitch", "action_id": "PT-01", "action": "POSITIVE_PITCH", "feedback": "잘 하고 있습니다. 계속 유지하세요" },
+    { "domain": "posture", "action_id": "PS-99", "action": "ANALYSIS_FAILED", "feedback": "분석에 실패했어요" }
   ]
 }
 ```

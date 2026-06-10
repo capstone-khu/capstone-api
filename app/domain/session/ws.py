@@ -9,6 +9,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from sqlalchemy import func
 
 from app.common.persistence import AsyncSessionLocal
+from app.domain.agent.policy import ANALYSIS_FAILED_ACTIONS
 from app.domain.agent.realtime import store
 from app.domain.agent.realtime.runtime import LiveSession
 from app.domain.agent.realtime.supervisor import resolve_cause
@@ -214,6 +215,18 @@ def _items(outputs: list[AgentOutput]) -> list[dict]:
         if output.action_id.endswith(_DELEGATION):
             item["cause"] = {"pending": True}
         items.append(item)
+
+    scored = {output.domain for output in outputs}
+    for domain in sorted(set(Domain) - scored, key=_TIE.__getitem__):
+        spec = ANALYSIS_FAILED_ACTIONS[domain]
+        items.append(
+            {
+                "domain": domain.value,
+                "action_id": spec.action_id,
+                "action": spec.action,
+                "feedback": spec.feedback,
+            }
+        )
     return items
 
 
