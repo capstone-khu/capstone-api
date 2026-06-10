@@ -1,0 +1,262 @@
+{
+  "source_audio": "fixtures/media/twinkle_twinkle.violin_reference.mp3",
+  "windows": [
+    {
+      "measure": 1,
+      "start": 0.95,
+      "end": 3.85
+    },
+    {
+      "measure": 2,
+      "start": 3.85,
+      "end": 6.3
+    },
+    {
+      "measure": 3,
+      "start": 6.3,
+      "end": 8.95
+    },
+    {
+      "measure": 4,
+      "start": 8.95,
+      "end": 11.5
+    },
+    {
+      "measure": 5,
+      "start": 11.5,
+      "end": 13.95
+    },
+    {
+      "measure": 6,
+      "start": 13.95,
+      "end": 17.15
+    },
+    {
+      "measure": 7,
+      "start": 17.15,
+      "end": 19.1
+    },
+    {
+      "measure": 8,
+      "start": 19.1,
+      "end": 21.6
+    },
+    {
+      "measure": 9,
+      "start": 21.6,
+      "end": 24.1
+    },
+    {
+      "measure": 10,
+      "start": 24.1,
+      "end": 26.75
+    },
+    {
+      "measure": 11,
+      "start": 26.75,
+      "end": 29.35
+    },
+    {
+      "measure": 12,
+      "start": 29.35,
+      "end": 33.0
+    }
+  ],
+  "anchors": [
+    {
+      "measure": 1,
+      "time": 0.992,
+      "radius": 0.25
+    },
+    {
+      "measure": 1,
+      "time": 1.68,
+      "radius": 0.25
+    },
+    {
+      "measure": 1,
+      "time": 2.672,
+      "radius": 0.25
+    },
+    {
+      "measure": 1,
+      "time": 3.632,
+      "radius": 0.2
+    },
+    {
+      "measure": 2,
+      "time": 3.968,
+      "radius": 0.2
+    },
+    {
+      "measure": 2,
+      "time": 4.608,
+      "radius": 0.225
+    },
+    {
+      "measure": 2,
+      "time": 4.912,
+      "radius": 0.225
+    },
+    {
+      "measure": 3,
+      "time": 6.192,
+      "radius": 0.25
+    },
+    {
+      "measure": 3,
+      "time": 6.88,
+      "radius": 0.25
+    },
+    {
+      "measure": 3,
+      "time": 7.536,
+      "radius": 0.25
+    },
+    {
+      "measure": 3,
+      "time": 8.128,
+      "radius": 0.25
+    },
+    {
+      "measure": 4,
+      "time": 8.768,
+      "radius": 0.25
+    },
+    {
+      "measure": 4,
+      "time": 9.36,
+      "radius": 0.25
+    },
+    {
+      "measure": 4,
+      "time": 10.016,
+      "radius": 0.25
+    },
+    {
+      "measure": 5,
+      "time": 11.36,
+      "radius": 0.25
+    },
+    {
+      "measure": 5,
+      "time": 12.016,
+      "radius": 0.25
+    },
+    {
+      "measure": 5,
+      "time": 12.608,
+      "radius": 0.25
+    },
+    {
+      "measure": 5,
+      "time": 13.264,
+      "radius": 0.25
+    },
+    {
+      "measure": 6,
+      "time": 13.872,
+      "radius": 0.25
+    },
+    {
+      "measure": 6,
+      "time": 14.512,
+      "radius": 0.25
+    },
+    {
+      "measure": 7,
+      "time": 17.104,
+      "radius": 0.25
+    },
+    {
+      "measure": 7,
+      "time": 17.696,
+      "radius": 0.25
+    },
+    {
+      "measure": 7,
+      "time": 18.368,
+      "radius": 0.25
+    },
+    {
+      "measure": 7,
+      "time": 18.992,
+      "radius": 0.1
+    },
+    {
+      "measure": 8,
+      "time": 19.936,
+      "radius": 0.25
+    },
+    {
+      "measure": 8,
+      "time": 20.24,
+      "radius": 0.25
+    },
+    {
+      "measure": 9,
+      "time": 21.616,
+      "radius": 0.25
+    },
+    {
+      "measure": 9,
+      "time": 22.272,
+      "radius": 0.25
+    },
+    {
+      "measure": 9,
+      "time": 22.832,
+      "radius": 0.25
+    },
+    {
+      "measure": 10,
+      "time": 24.048,
+      "radius": 0.1
+    },
+    {
+      "measure": 10,
+      "time": 24.864,
+      "radius": 0.2
+    },
+    {
+      "measure": 10,
+      "time": 25.344,
+      "radius": 0.2
+    },
+    {
+      "measure": 11,
+      "time": 26.592,
+      "radius": 0.25
+    },
+    {
+      "measure": 11,
+      "time": 27.264,
+      "radius": 0.225
+    },
+    {
+      "measure": 11,
+      "time": 27.872,
+      "radius": 0.225
+    },
+    {
+      "measure": 11,
+      "time": 28.544,
+      "radius": 0.25
+    },
+    {
+      "measure": 12,
+      "time": 29.2,
+      "radius": 0.2
+    },
+    {
+      "measure": 12,
+      "time": 29.84,
+      "radius": 0.2
+    },
+    {
+      "measure": 12,
+      "time": 30.656,
+      "radius": 0.25
+    }
+  ]
+}

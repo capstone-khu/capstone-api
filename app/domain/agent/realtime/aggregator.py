@@ -38,6 +38,9 @@ class _AudioBuffer:
             return None
         return audio[i0:i1]
 
+    def start_s(self) -> float | None:
+        return self._chunks[0][0] / 1000.0 if self._chunks else None
+
 
 class PitchAggregator:
     domain = Domain.PITCH
@@ -62,27 +65,46 @@ class PitchAggregator:
 
 
 class RhythmAggregator:
+    """마디 오디오 → 박자 측정. 초반 마디 drift 중앙값으로 파이프라인 지연을 보정한다.
+    """
+
+    PAD_S = 0.3
+    CALIBRATION_MEASURES = 3
+
     domain = Domain.RHYTHM
 
-    def __init__(
-        self, spec: RhythmSpec, windows: list[tuple[int, float, float]]
-    ) -> None:
+    def __init__(self, spec: RhythmSpec) -> None:
         self.spec = spec
-        self.windows = {m: (s, e) for m, s, e in windows}
+        self.windows = {m: (s, e) for m, s, e in spec.windows}
         self.measurer = RhythmMeasurer()
         self.buffer = _AudioBuffer()
+        self._drifts: list[float] = []
+        self._offset = 0.0
 
     def feed(self, ts_ms: int, payload: bytes) -> None:
         self.buffer.feed(ts_ms, payload)
 
     def reading(self, measure_index: int) -> MeasureReading:
         start, end = self.windows[measure_index]
-        seg = self.buffer.segment(start, end, SAMPLE_RATE)
+        lo = start - self.PAD_S
+        seg = self.buffer.segment(lo, end + self.PAD_S, SAMPLE_RATE)
         if seg is None or len(seg) == 0:
             return _invalid(measure_index)
-        return self.measurer.reading_for_window(
-            seg, SAMPLE_RATE, start, self.spec, measure_index
-        )
+        t0 = max(lo, self.buffer.start_s())
+        env = self.measurer.detector.envelope(seg, SAMPLE_RATE, t0=t0)
+        self._calibrate(env, measure_index)
+        return self.measurer.reading(env, self.spec, measure_index, self._offset)
+
+    def _calibrate(self, env, measure_index: int) -> None:
+        import numpy as np
+
+        if len(self._drifts) >= self.CALIBRATION_MEASURES:
+            return
+        drift = self.measurer.window_offset(env, self.spec, measure_index)
+        if drift is None:
+            return
+        self._drifts.append(drift)
+        self._offset = max(0.0, float(np.median(self._drifts)))
 
 
 class PostureAggregator:
@@ -173,21 +195,12 @@ async def build_live_session(db, session_obj):
     from app.domain.agent.realtime.runtime import LiveSession
     from app.domain.agent.repository import AgentRepository
     from app.domain.agent.rhythm.policy import RhythmPolicy
-    from app.domain.song.model import Song
 
     song_id = session_obj.song_id
     score = load_timed_score(song_id)
     windows = score.measure_windows()
 
-    song = await db.get(Song, song_id)
-    if song is None:
-        raise ValueError(f"존재하지 않는 곡입니다: song_id={song_id}")
-    beats_per_measure = int(song.time_signature.split("/")[0])
-    rhythm_spec = RhythmSpec(
-        bpm=song.bpm,
-        beats_per_measure=beats_per_measure,
-        total_measures=song.total_measures,
-    )
+    rhythm_spec = RhythmSpec.load(song_id)
     posture_spec = PostureSpec(windows=windows)
 
     entries = await AgentRepository(db).load_q_table(session_obj.user_id)
@@ -208,7 +221,7 @@ async def build_live_session(db, session_obj):
     await asyncio.get_event_loop().run_in_executor(None, posture.prepare)
     aggregators = {
         Domain.PITCH: PitchAggregator(score, windows),
-        Domain.RHYTHM: RhythmAggregator(rhythm_spec, windows),
+        Domain.RHYTHM: RhythmAggregator(rhythm_spec),
         Domain.POSTURE: posture,
     }
     return LiveSession(

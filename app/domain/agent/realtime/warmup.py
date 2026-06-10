@@ -23,9 +23,9 @@ def warm_blocking() -> None:
         logger.warning("음정 워밍업 skip: %s", exc)
 
     try:
-        import librosa
+        from app.domain.agent.rhythm.measurer import LibrosaOnsetDetector
 
-        librosa.beat.beat_track(y=np.zeros(48000, dtype=np.float32), sr=48000)
+        LibrosaOnsetDetector().envelope(np.zeros(48000, dtype=np.float32), 48000)
     except Exception as exc:
         logger.warning("박자 워밍업 skip: %s", exc)
 
